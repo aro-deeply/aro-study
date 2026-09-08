@@ -1,6 +1,8 @@
 """reader.js 점검(데모 페이지, 메모리 저장소): 하이라이트, 메모, 내 것만/전체, AI용 복사, 수정·삭제, 의견/답글/삭제."""
 import sys
 from playwright.sync_api import sync_playwright
+import os
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out"); os.makedirs(OUT, exist_ok=True)
 
 url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8770/demo/index.html"
 logs, fails = [], []
@@ -73,7 +75,7 @@ with sync_playwright() as p:
     pg.click('.rd-float button[data-act="memo"]'); pg.wait_for_timeout(300)
     check("memo mark has-note", ids(pg, "#content mark.rd-mark.has-note:not(.other)") == 1)
     check("memo note open with text", "테스트 메모입니다" in pg.inner_text("#content .rd-note.open"))
-    pg.screenshot(path="reader-1.png", full_page=False)
+    pg.screenshot(path=os.path.join(OUT, "reader-1.png"), full_page=False)
 
     # AI용 복사: 전체 메모를 사람별로
     out = pg.evaluate("window.__reader.exportText()")
@@ -107,7 +109,7 @@ with sync_playwright() as p:
     # 삭제: 내 것만 삭제 버튼 존재
     dels = pg.locator('#comments button[data-op="del"]')
     check("delete buttons only on mine (a): 3", dels.count() == 3, str(dels.count()))
-    pg.screenshot(path="reader-2.png", full_page=True)
+    pg.screenshot(path=os.path.join(OUT, "reader-2.png"), full_page=True)
     # 내 새 의견 삭제
     ids = pg.evaluate("Array.from(document.querySelectorAll('#comments .cm')).map(x=>x.dataset.id)")
     pg.click('#comments .cm:has-text("새 의견입니다") button[data-op="del"]'); pg.wait_for_timeout(300)

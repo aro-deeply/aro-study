@@ -1,6 +1,8 @@
 """settle.js 계산 검증 + 렌더 스크린샷 (예시 데이터, Firestore 접근 없음)."""
 import sys, json
 from playwright.sync_api import sync_playwright
+import os
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out"); os.makedirs(OUT, exist_ok=True)
 
 url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8770/demo/index.html"
 logs = []
@@ -19,7 +21,7 @@ with sync_playwright() as p:
         pg.on("pageerror", lambda e: logs.append(f"[pageerror] {e}"))
         pg.goto(url, wait_until="load")
         pg.wait_for_function("window.__done === true", timeout=20000)
-        pg.screenshot(path=f"settle-{name}.png", full_page=True)
+        pg.screenshot(path=os.path.join(OUT, f"settle-{name}.png"), full_page=True)
         if name == "mobile":
             r = pg.evaluate("window.__r")
             r2 = pg.evaluate("window.__r2")
