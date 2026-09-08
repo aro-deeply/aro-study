@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAFAF7">
+<title>관리 · HR STUDY</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 22px}
+  .tabs button{font:inherit;font-size:.875rem;font-weight:600;padding:8px 16px;min-height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer}
+  .tabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  section[data-tab]{display:none}
+  section[data-tab].on{display:block}
+  .form-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+  .form-title b{font-size:1rem}
+  .form-title .link-btn{font-size:.8125rem}
+  .sess-pick{margin:0 0 14px}
+  .split-mode{margin-bottom:8px}
+</style>
+</head><body>
+<div id="topbar"></div>
+<div class="wrap">
+  <div class="kicker"><span>HR STUDY</span><span>총무 관리</span></div>
+  <h1>관리</h1>
+  <p class="sub">멤버, 모임 세션, 지출 항목, 정산 완료 기록을 여기서 입력합니다. 이름과 금액은 모두 Firestore에 저장됩니다.</p>
+  <div id="guard"></div>
+
+  <div id="app" class="hidden">
+  <div class="tabs" id="tabs">
+    <button data-t="members" class="on" type="button">멤버</button>
+    <button data-t="sessions" type="button">세션</button>
+    <button data-t="expenses" type="button">지출</button>
+    <button data-t="payments" type="button">정산 완료</button>
+  </div>
+
+  <!-- 멤버 -->
+  <section data-tab="members" class="on">
+    <form class="card" id="f-member">
+      <div class="form-title"><b id="member-form-title">멤버 추가</b><button type="button" class="link-btn hidden" id="member-cancel">새로 입력</button></div>
+      <div class="row stack">
+        <div class="field"><label for="m-name">이름</label><input id="m-name" type="text" required placeholder="표시할 이름" autocomplete="off"></div>
+        <div class="field" style="flex:0 0 120px"><label for="m-order">순서</label><input id="m-order" type="number" inputmode="numeric" min="1" step="1"></div>
+      </div>
+      <div class="field"><div class="checks">
+        <label><input type="checkbox" id="m-admin">총무 (관리 권한)</label>
+        <label><input type="checkbox" id="m-active" checked>활성</label>
+      </div><div class="help">총무는 한 명 이상이면 됩니다. 비활성 멤버는 이름 선택과 참석자 목록에서 빠집니다.</div></div>
+      <div class="actions"><button class="btn" type="submit">저장</button></div>
+    </form>
+    <div class="lab" style="margin-top:22px">멤버 목록</div>
+    <div class="rows" id="member-list"></div>
+  </section>
+
+  <!-- 세션 -->
+  <section data-tab="sessions">
+    <form class="card" id="f-session">
+      <div class="form-title"><b id="session-form-title">세션 만들기</b><button type="button" class="link-btn hidden" id="session-cancel">새로 입력</button></div>
+      <div class="row stack">
+        <div class="field"><label for="s-date">날짜</label><input id="s-date" type="date" required><div class="help">날짜가 세션 ID(예: 2026-09-15)가 되며 주차 페이지 폴더명과 같습니다.</div></div>
+      </div>
+      <div class="field"><label for="s-title">제목</label><input id="s-title" type="text" required placeholder="이날 다룬 주제"></div>
+      <div class="field"><label>참석자</label><div class="checks" id="s-att"></div></div>
+      <div class="field"><label for="s-next">다음 모임 계획</label><textarea id="s-next" placeholder="날짜, 장소, 준비할 것"></textarea></div>
+      <div class="field"><label for="s-memo">메모 (총무용)</label><textarea id="s-memo" style="min-height:70px"></textarea></div>
+      <div class="actions"><button class="btn" type="submit">저장</button><span class="spacer"></span><button class="btn danger hidden" type="button" id="session-delete">삭제</button></div>
+    </form>
+    <div class="lab" style="margin-top:22px">세션 목록</div>
+    <div class="rows" id="session-list"></div>
+  </section>
+
+  <!-- 지출 -->
+  <section data-tab="expenses">
+    <div class="field sess-pick"><label for="e-session">세션</label><select id="e-session"></select></div>
+    <form class="card" id="f-expense">
+      <div class="form-title"><b id="expense-form-title">지출 추가</b><button type="button" class="link-btn hidden" id="expense-cancel">새로 입력</button></div>
+      <div class="field"><label for="e-item">항목</label><input id="e-item" type="text" required placeholder="예: 저녁 식사" autocomplete="off"></div>
+      <div class="field"><label for="e-amount">금액 (원)</label><input id="e-amount" class="big" type="text" inputmode="numeric" required placeholder="0" autocomplete="off"></div>
+      <div class="row stack">
+        <div class="field"><label for="e-date">날짜</label><input id="e-date" type="date" required></div>
+        <div class="field"><label for="e-cat">카테고리</label><select id="e-cat"><option>식사</option><option>카페</option><option>장소</option><option>기타</option></select></div>
+        <div class="field"><label for="e-paidby">낸 사람</label><select id="e-paidby"></select></div>
+      </div>
+      <div class="field"><label>분배 대상</label>
+        <div class="seg split-mode" id="e-splitmode"><button type="button" data-v="attendees" class="on">참석자 전원</button><button type="button" data-v="custom">직접 선택</button></div>
+        <div class="checks hidden" id="e-split"></div>
+      </div>
+      <div class="field"><label for="e-note">비고</label><input id="e-note" type="text" placeholder="선택"></div>
+      <div class="actions"><button class="btn" type="submit">저장</button><span class="spacer"></span><button class="btn danger hidden" type="button" id="expense-delete">삭제</button></div>
+    </form>
+    <div class="lab" style="margin-top:22px">이 세션의 지출 <span id="expense-sum" class="soft"></span></div>
+    <div class="rows" id="expense-list"></div>
+  </section>
+
+  <!-- 정산 완료 -->
+  <section data-tab="payments">
+    <div class="field sess-pick"><label for="p-session">세션</label><select id="p-session"></select></div>
+    <form class="card" id="f-payment">
+      <div class="form-title"><b>정산 완료 기록</b></div>
+      <div class="note">누가 누구에게 얼마를 보냈는지 기록합니다. 주차 페이지의 정산 화면에서 "보낼 돈" 목록이 완료 표시로 바뀝니다.</div>
+      <div class="row stack">
+        <div class="field"><label for="p-from">보낸 사람</label><select id="p-from"></select></div>
+        <div class="field"><label for="p-to">받은 사람</label><select id="p-to"></select></div>
+      </div>
+      <div class="field"><label for="p-amount">금액 (원)</label><input id="p-amount" class="big" type="text" inputmode="numeric" required placeholder="0"></div>
+      <div class="row stack">
+        <div class="field"><label for="p-date">날짜</label><input id="p-date" type="date" required></div>
+        <div class="field"><label for="p-note">비고</label><input id="p-note" type="text" placeholder="선택"></div>
+      </div>
+      <div class="actions"><button class="btn" type="submit">기록</button></div>
+    </form>
+    <div class="lab" style="margin-top:22px">이 세션의 정산 완료</div>
+    <div class="rows" id="payment-list"></div>
+  </section>
+  </div>
+</div>
+
+<script type="module">
+import {
+  ready, db, ROOT, $, $$, esc, el, toast, fmtWon, fmtDate, todayStr,
+  loadMembers, members, activeMembers, memberName, memberById, isAdmin, getMe, renderTopbar,
+  collection, doc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, serverTimestamp
+} from "./assets/app.js";
+
+const { me } = await ready({ requireName: true });
+
+/* ---------- 권한 ---------- */
+const guard = $("#guard");
+if (members().length && !isAdmin()) {
+  guard.innerHTML = `<div class="note warn">총무만 들어올 수 있는 화면입니다. 상단의 이름을 눌러 총무 이름을 선택하거나 <a href="${ROOT}">목록으로</a> 돌아가세요.</div>`;
+  document.addEventListener("aro:me", () => location.reload());
+} else {
+  if (!members().length) guard.innerHTML = `<div class="note">아직 멤버가 없습니다. 먼저 총무 본인을 "총무" 체크와 함께 추가하고, 상단의 "이름 선택"에서 본인을 고르세요.</div>`;
+  $("#app").classList.remove("hidden");
+  init();
+}
+
+/* ---------- 상태 ---------- */
+let sessions = [];        // 최신순
+let expenses = [];        // 선택 세션
+let payments = [];        // 선택 세션
+let editing = { member: null, session: null, expense: null };
+let splitMode = "attendees";
+
+const num = s => Number(String(s).replace(/[^\d-]/g, "")) || 0;
+const sessionLabel = s => `${fmtDate(s.date)} ${s.title || ""}`.trim();
+const sessionById = id => sessions.find(s => s.id === id);
+
+function init() {
+  // 탭
+  $("#tabs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    $$("#tabs button").forEach(x => x.classList.toggle("on", x === b));
+    $$("section[data-tab]").forEach(s => s.classList.toggle("on", s.dataset.tab === b.dataset.t));
+    location.hash = b.dataset.t;
+  });
+  const h = location.hash.replace("#", "");
+  if (h && $(`#tabs button[data-t="${h}"]`)) $(`#tabs button[data-t="${h}"]`).click();
+
+  bindMembers(); bindSessions(); bindExpenses(); bindPayments();
+  renderMembers(); renderMemberSelects();
+  loadSessions();
+}
+
+/* ---------- 멤버 ---------- */
+function bindMembers() {
+  const f = $("#f-member");
+  if (!members().length) $("#m-admin").checked = true;
+  f.addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("#m-name").value.trim(); if (!name) return;
+    const data = {
+      name, order: Number($("#m-order").value) || (members().length + 1),
+      active: $("#m-active").checked, role: $("#m-admin").checked ? "admin" : "member"
+    };
+    try {
+      if (editing.member) await updateDoc(doc(db, "members", editing.member), data);
+      else await addDoc(collection(db, "members"), { ...data, joinedAt: serverTimestamp() });
+      toast(editing.member ? "수정했습니다" : "추가했습니다");
+      resetMemberForm();
+      await loadMembers(true); renderMembers(); renderMemberSelects(); renderTopbar();
+      if (!getMe() && members().length === 1) toast("상단의 이름 선택에서 본인을 고르세요", 3000);
+    } catch (ex) { fail(ex); }
+  });
+  $("#member-cancel").addEventListener("click", resetMemberForm);
+  $("#member-list").addEventListener("click", async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const m = memberById(b.dataset.id); if (!m) return;
+    if (b.dataset.op === "edit") {
+      editing.member = m.id;
+      $("#member-form-title").textContent = `수정: ${m.name}`; $("#member-cancel").classList.remove("hidden");
+      $("#m-name").value = m.name; $("#m-order").value = m.order ?? ""; $("#m-admin").checked = m.role === "admin"; $("#m-active").checked = m.active !== false;
+      $("#m-name").focus(); window.scrollTo({ top: 0, behavior: "smooth" });
+    } else if (b.dataset.op === "toggle") {
+      try { await updateDoc(doc(db, "members", m.id), { active: m.active === false }); await loadMembers(true); renderMembers(); renderMemberSelects(); toast(m.active === false ? "활성화했습니다" : "비활성화했습니다"); }
+      catch (ex) { fail(ex); }
+    }
+  });
+}
+function resetMemberForm() {
+  editing.member = null; $("#f-member").reset(); $("#m-active").checked = true;
+  $("#member-form-title").textContent = "멤버 추가"; $("#member-cancel").classList.add("hidden");
+}
+function renderMembers() {
+  const list = members();
+  $("#member-list").innerHTML = list.length ? list.map(m => `
+    <div class="rowi${m.active === false ? " off" : ""}">
+      <div class="main">${esc(m.name)} ${m.role === "admin" ? '<span class="tag">총무</span>' : ""}<small>순서 ${m.order ?? "-"} · ${m.active === false ? "비활성" : "활성"}</small></div>
+      <span class="ops"><button class="link-btn" data-op="edit" data-id="${m.id}">수정</button><button class="link-btn${m.active === false ? "" : " danger"}" data-op="toggle" data-id="${m.id}">${m.active === false ? "활성화" : "비활성화"}</button></span>
+    </div>`).join("") : '<div class="empty">아직 멤버가 없습니다.</div>';
+}
+function memberOptions(sel, list = activeMembers()) {
+  return list.map(m => `<option value="${m.id}"${m.id === sel ? " selected" : ""}>${esc(m.name)}</option>`).join("");
+}
+function memberChecks(checked = []) {
+  return activeMembers().map(m => `<label><input type="checkbox" value="${m.id}"${checked.includes(m.id) ? " checked" : ""}>${esc(m.name)}</label>`).join("") || '<span class="soft">활성 멤버가 없습니다.</span>';
+}
+function renderMemberSelects() {
+  const admin = members().find(m => m.role === "admin")?.id;
+  $("#e-paidby").innerHTML = memberOptions(admin);
+  $("#p-from").innerHTML = memberOptions();
+  $("#p-to").innerHTML = memberOptions(admin);
+  $("#s-att").innerHTML = memberChecks(activeMembers().map(m => m.id));
+  $("#e-split").innerHTML = memberChecks();
+}
+
+/* ---------- 세션 ---------- */
+async function loadSessions() {
+  try {
+    const snap = await getDocs(query(collection(db, "sessions"), orderBy("date", "desc")));
+    sessions = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (ex) { fail(ex); sessions = []; }
+  renderSessions(); renderSessionSelects();
+  const cur = $("#e-session").value;
+  if (cur) { loadExpenses(cur); }
+  const pc = $("#p-session").value;
+  if (pc) loadPayments(pc);
+}
+function bindSessions() {
+  $("#s-date").value = todayStr();
+  $("#f-session").addEventListener("submit", async e => {
+    e.preventDefault();
+    const date = $("#s-date").value; if (!date) return;
+    const id = editing.session || date;
+    if (!editing.session && sessionById(id) && !confirm(`${fmtDate(date)} 세션이 이미 있습니다. 덮어쓸까요?`)) return;
+    const data = {
+      date, title: $("#s-title").value.trim(),
+      attendees: $$("#s-att input:checked").map(i => i.value),
+      nextPlan: $("#s-next").value.trim(), memo: $("#s-memo").value.trim(),
+      updatedAt: serverTimestamp()
+    };
+    try {
+      if (editing.session) await updateDoc(doc(db, "sessions", id), data);
+      else await setDoc(doc(db, "sessions", id), { ...data, createdAt: serverTimestamp() }, { merge: true });
+      toast("저장했습니다"); resetSessionForm(); await loadSessions();
+    } catch (ex) { fail(ex); }
+  });
+  $("#session-cancel").addEventListener("click", resetSessionForm);
+  $("#session-delete").addEventListener("click", async () => {
+    const s = sessionById(editing.session); if (!s) return;
+    if (!confirm(`${sessionLabel(s)} 세션을 삭제할까요? 지출·의견 기록은 남지만 목록에서 사라집니다.`)) return;
+    try { await deleteDoc(doc(db, "sessions", s.id)); toast("삭제했습니다"); resetSessionForm(); await loadSessions(); } catch (ex) { fail(ex); }
+  });
+  $("#session-list").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const s = sessionById(b.dataset.id); if (!s) return;
+    editing.session = s.id;
+    $("#session-form-title").textContent = `수정: ${fmtDate(s.date, "short")}`; $("#session-cancel").classList.remove("hidden"); $("#session-delete").classList.remove("hidden");
+    $("#s-date").value = s.date; $("#s-title").value = s.title || ""; $("#s-next").value = s.nextPlan || ""; $("#s-memo").value = s.memo || "";
+    $("#s-att").innerHTML = memberChecks(s.attendees || []);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+function resetSessionForm() {
+  editing.session = null; $("#f-session").reset(); $("#s-date").value = todayStr();
+  $("#s-att").innerHTML = memberChecks(activeMembers().map(m => m.id));
+  $("#session-form-title").textContent = "세션 만들기"; $("#session-cancel").classList.add("hidden"); $("#session-delete").classList.add("hidden");
+}
+function renderSessions() {
+  $("#session-list").innerHTML = sessions.length ? sessions.map(s => `
+    <div class="rowi"><div class="main">${esc(s.title || "(제목 없음)")}<small>${fmtDate(s.date)} · 참석 ${(s.attendees || []).length}명 · <a href="${ROOT}weeks/${s.id}/">주차 페이지</a></small></div>
+    <span class="ops"><button class="link-btn" data-id="${s.id}">수정</button></span></div>`).join("") : '<div class="empty">아직 세션이 없습니다.</div>';
+}
+function renderSessionSelects() {
+  const opts = sessions.map(s => `<option value="${s.id}">${esc(sessionLabel(s))}</option>`).join("");
+  for (const id of ["e-session", "p-session"]) {
+    const sel = $("#" + id), cur = sel.value;
+    sel.innerHTML = opts || '<option value="">세션을 먼저 만드세요</option>';
+    if (cur && sessionById(cur)) sel.value = cur;
+  }
+}
+
+/* ---------- 지출 ---------- */
+async function loadExpenses(sessionId) {
+  if (!sessionId) { expenses = []; renderExpenses(); return; }
+  try {
+    const snap = await getDocs(query(collection(db, "expenses"), where("sessionId", "==", sessionId)));
+    expenses = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.date || "").localeCompare(b.date || "") || (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+  } catch (ex) { fail(ex); expenses = []; }
+  renderExpenses();
+}
+function bindExpenses() {
+  $("#e-session").addEventListener("change", () => { resetExpenseForm(); loadExpenses($("#e-session").value); });
+  $("#e-splitmode").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    splitMode = b.dataset.v;
+    $$("#e-splitmode button").forEach(x => x.classList.toggle("on", x === b));
+    $("#e-split").classList.toggle("hidden", splitMode !== "custom");
+  });
+  $("#e-amount").addEventListener("blur", () => { const v = num($("#e-amount").value); $("#e-amount").value = v ? v.toLocaleString("ko-KR") : ""; });
+  $("#f-expense").addEventListener("submit", async e => {
+    e.preventDefault();
+    const sessionId = $("#e-session").value; if (!sessionId) { toast("세션을 먼저 만드세요"); return; }
+    const amount = num($("#e-amount").value); if (amount <= 0) { toast("금액을 입력하세요"); $("#e-amount").focus(); return; }
+    const splitAmong = splitMode === "attendees" ? "attendees" : $$("#e-split input:checked").map(i => i.value);
+    if (splitMode === "custom" && !splitAmong.length) { toast("분배 대상을 선택하세요"); return; }
+    const data = {
+      sessionId, date: $("#e-date").value || sessionById(sessionId)?.date || todayStr(),
+      item: $("#e-item").value.trim(), amount, category: $("#e-cat").value,
+      paidBy: $("#e-paidby").value, splitAmong, note: $("#e-note").value.trim()
+    };
+    try {
+      if (editing.expense) await updateDoc(doc(db, "expenses", editing.expense), data);
+      else await addDoc(collection(db, "expenses"), { ...data, createdAt: serverTimestamp(), createdBy: me || "" });
+      toast(editing.expense ? "수정했습니다" : "추가했습니다");
+      resetExpenseForm(true); await loadExpenses(sessionId);
+    } catch (ex) { fail(ex); }
+  });
+  $("#expense-cancel").addEventListener("click", () => resetExpenseForm());
+  $("#expense-delete").addEventListener("click", async () => {
+    const x = expenses.find(v => v.id === editing.expense); if (!x) return;
+    if (!confirm(`"${x.item}" ${fmtWon(x.amount)}원 항목을 삭제할까요?`)) return;
+    try { await deleteDoc(doc(db, "expenses", x.id)); toast("삭제했습니다"); resetExpenseForm(); await loadExpenses(x.sessionId); } catch (ex) { fail(ex); }
+  });
+  $("#expense-list").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const x = expenses.find(v => v.id === b.dataset.id); if (!x) return;
+    editing.expense = x.id;
+    $("#expense-form-title").textContent = `수정: ${x.item}`; $("#expense-cancel").classList.remove("hidden"); $("#expense-delete").classList.remove("hidden");
+    $("#e-item").value = x.item || ""; $("#e-amount").value = fmtWon(x.amount); $("#e-date").value = x.date || ""; $("#e-cat").value = x.category || "기타"; $("#e-paidby").value = x.paidBy || "";
+    $("#e-note").value = x.note || "";
+    const custom = Array.isArray(x.splitAmong);
+    $(`#e-splitmode button[data-v="${custom ? "custom" : "attendees"}"]`).click();
+    if (custom) $("#e-split").innerHTML = memberChecks(x.splitAmong);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+}
+function resetExpenseForm(keepDate = false) {
+  editing.expense = null;
+  const date = keepDate ? $("#e-date").value : "";
+  $("#f-expense").reset();
+  $("#e-date").value = date || sessionById($("#e-session").value)?.date || todayStr();
+  const admin = members().find(m => m.role === "admin")?.id; if (admin) $("#e-paidby").value = admin;
+  $("#e-split").innerHTML = memberChecks();
+  $('#e-splitmode button[data-v="attendees"]').click();
+  $("#expense-form-title").textContent = "지출 추가"; $("#expense-cancel").classList.add("hidden"); $("#expense-delete").classList.add("hidden");
+}
+function renderExpenses() {
+  const total = expenses.reduce((a, x) => a + (Number(x.amount) || 0), 0);
+  $("#expense-sum").textContent = expenses.length ? `${expenses.length}건 · 합계 ${fmtWon(total)}원` : "";
+  $("#expense-list").innerHTML = expenses.length ? expenses.map(x => `
+    <div class="rowi"><div class="main">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category)} · ${esc(memberName(x.paidBy))} 냄 · ${Array.isArray(x.splitAmong) ? `${x.splitAmong.length}명 분배` : "참석자 전원"}${x.note ? " · " + esc(x.note) : ""}</small></div>
+    <span class="amt">${fmtWon(x.amount)}</span><span class="ops"><button class="link-btn" data-id="${x.id}">수정</button></span></div>`).join("") : '<div class="empty">이 세션에 지출이 없습니다.</div>';
+}
+
+/* ---------- 정산 완료 ---------- */
+async function loadPayments(sessionId) {
+  if (!sessionId) { payments = []; renderPayments(); return; }
+  try {
+    const snap = await getDocs(query(collection(db, "payments"), where("sessionId", "==", sessionId)));
+    payments = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  } catch (ex) { fail(ex); payments = []; }
+  renderPayments();
+}
+function bindPayments() {
+  $("#p-date").value = todayStr();
+  $("#p-session").addEventListener("change", () => loadPayments($("#p-session").value));
+  $("#p-amount").addEventListener("blur", () => { const v = num($("#p-amount").value); $("#p-amount").value = v ? v.toLocaleString("ko-KR") : ""; });
+  $("#f-payment").addEventListener("submit", async e => {
+    e.preventDefault();
+    const sessionId = $("#p-session").value; if (!sessionId) { toast("세션을 먼저 만드세요"); return; }
+    const amount = num($("#p-amount").value); if (amount <= 0) { toast("금액을 입력하세요"); return; }
+    const from = $("#p-from").value, to = $("#p-to").value;
+    if (from === to) { toast("보낸 사람과 받은 사람이 같습니다"); return; }
+    try {
+      await addDoc(collection(db, "payments"), { sessionId, from, to, amount, date: $("#p-date").value || todayStr(), note: $("#p-note").value.trim(), createdAt: serverTimestamp() });
+      toast("기록했습니다"); $("#p-amount").value = ""; $("#p-note").value = ""; await loadPayments(sessionId);
+    } catch (ex) { fail(ex); }
+  });
+  $("#payment-list").addEventListener("click", async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const p = payments.find(v => v.id === b.dataset.id); if (!p) return;
+    if (!confirm(`${memberName(p.from)} → ${memberName(p.to)} ${fmtWon(p.amount)}원 기록을 삭제할까요?`)) return;
+    try { await deleteDoc(doc(db, "payments", p.id)); toast("삭제했습니다"); await loadPayments(p.sessionId); } catch (ex) { fail(ex); }
+  });
+}
+function renderPayments() {
+  $("#payment-list").innerHTML = payments.length ? payments.map(p => `
+    <div class="rowi"><div class="main">${esc(memberName(p.from))} <span class="soft">→</span> ${esc(memberName(p.to))}<small>${fmtDate(p.date, "short")}${p.note ? " · " + esc(p.note) : ""}</small></div>
+    <span class="amt">${fmtWon(p.amount)}</span><span class="ops"><button class="link-btn danger" data-id="${p.id}">삭제</button></span></div>`).join("") : '<div class="empty">아직 완료 기록이 없습니다.</div>';
+}
+
+/* ---------- 공통 ---------- */
+function fail(ex) {
+  console.error(ex);
+  const msg = String(ex?.message || ex);
+  const link = msg.match(/https:\/\/console\.firebase\.google\.com\S+/);
+  if (link) { alert("Firestore 인덱스가 필요합니다. 확인을 누른 뒤 열리는 콘솔에서 '인덱스 만들기'를 누르세요.\n\n" + link[0]); window.open(link[0], "_blank"); }
+  else if (/insufficient permissions/i.test(msg)) toast("권한 오류: Firestore 규칙을 콘솔에 게시했는지 확인하세요", 4000);
+  else toast("실패: " + msg.slice(0, 80), 4000);
+}
+document.addEventListener("aro:me", () => location.reload());
+</script>
+</body></html>
