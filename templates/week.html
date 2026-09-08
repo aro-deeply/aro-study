@@ -2,6 +2,9 @@
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#FAFAF7">
+<link rel="manifest" href="/aro-study/manifest.json">
+<link rel="apple-touch-icon" href="/aro-study/assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/aro-study/assets/icons/icon-192.png">
 <title>{{TITLE}} · HR STUDY</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="../../assets/style.css">
@@ -11,7 +14,7 @@
   치환할 자리: {{SESSION_ID}} {{WEEK_NO}} {{DATE_LABEL}} {{TITLE}} {{CONTENT}} {{NEXT_PLAN}}
   정적 HTML에 두는 것: 제목, 날짜, 그날 다룬 내용 요약, 관련 브리프 링크, 다음 모임 계획.
   이름·금액·의견·참석자는 전부 Firestore에서 읽는다. 여기 하드코딩하지 않는다.
-  금지: em dash(—), 이모지, 세리프 폰트.
+  금지: em dash, 이모지, 세리프 폰트.
 -->
 <body data-session="{{SESSION_ID}}">
 <div id="topbar"></div>

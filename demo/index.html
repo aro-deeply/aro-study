@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAFAF7">
+<link rel="manifest" href="/aro-study/manifest.json">
+<link rel="apple-touch-icon" href="/aro-study/assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/aro-study/assets/icons/icon-192.png">
 <title>정산 미리보기 (예시 데이터)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="../assets/style.css">
@@ -8,7 +12,7 @@
 <div class="wrap">
   <div class="kicker"><span>HR STUDY</span><span>WEEK 01 (예시)</span></div>
   <h1>첫 모임: 스터디 운영 방식과 첫 브리프 토론</h1>
-  <p class="sub meta-line">2026.09.15 (화) · 참석 5명</p>
+  <p class="sub meta-line">2026.09.15 (화) · 참석 5명 · <a href="../?demo=1">목록 화면 예시</a></p>
   <div class="note">이 페이지는 예시입니다. 이름과 금액은 가명·예시이고, 여기서 남긴 하이라이트·메모·의견은 저장되지 않습니다(새로고침하면 사라짐). 본문을 드래그해 하이라이트와 메모를 시험해 보세요.</div>
 
   <h2><em>1</em>이날의 내용</h2>
@@ -37,41 +41,21 @@
   import { computeSettlement, renderSettlement } from "../assets/settle.js";
   import { mountReader, mountComments, memoryStore } from "../assets/reader.js";
   import * as app from "../assets/app.js";
-  // 예시 멤버(가명)를 members 캐시에 직접 넣는다. Firestore 접근 없음.
-  const M = [
-    { id: "a", name: "멤버A", order: 1, role: "admin", active: true },
-    { id: "b", name: "멤버B", order: 2, role: "member", active: true },
-    { id: "c", name: "멤버C", order: 3, role: "member", active: true },
-    { id: "d", name: "멤버D", order: 4, role: "member", active: true },
-    { id: "e", name: "멤버E", order: 5, role: "member", active: true },
-  ];
+  import { MEMBERS as M, SESSIONS, EXPENSES as E, PAYMENTS as P, COMMENTS, ANNOTATIONS } from "./sample.js";
   app.setMembers(M);
 
   // 하이라이트·메모·의견: 메모리 저장소(저장 안 됨). 나는 멤버A.
   const ME = "a";
-  const ann = memoryStore([
-    { id: "x1", sessionId: "demo", author: "b", type: "memo", anchor: { start: 60, end: 90 }, text: "", note: "우리 회사도 같은 원칙이면 좋겠다", createdAt: new Date(Date.now() - 3600e3) },
-  ]);
-  const cms = memoryStore([
-    { id: "c1", sessionId: "demo", author: "b", text: "신입 온보딩 과제를 가져오는 건 좋은데, 팀별 편차가 클 것 같아요. 공통 양식이 있으면 좋겠습니다.", parentId: null, createdAt: new Date(Date.now() - 7200e3) },
-    { id: "c2", sessionId: "demo", author: "a", text: "양식은 제가 초안 만들어서 공유할게요.", parentId: "c1", createdAt: new Date(Date.now() - 5400e3) },
-  ]);
-  window.__reader = mountReader({ sessionId: "demo", me: ME, store: ann, root: document.getElementById("content") });
-  window.__comments = mountComments({ sessionId: "demo", me: ME, store: cms, root: document.getElementById("comments"), countEl: document.getElementById("comment-count") });
+  window.__reader = mountReader({ sessionId: "2026-09-15", me: ME, store: memoryStore(ANNOTATIONS), root: document.getElementById("content") });
+  window.__comments = mountComments({ sessionId: "2026-09-15", me: ME, store: memoryStore(COMMENTS), root: document.getElementById("comments"), countEl: document.getElementById("comment-count") });
 
-  const S = { "2026-09-15": { attendees: ["a", "b", "c", "d", "e"] } };
-  const E = [
-    { sessionId: "2026-09-15", date: "2026-09-15", item: "저녁 식사", amount: 96500, category: "식사", paidBy: "a", splitAmong: "attendees" },
-    { sessionId: "2026-09-15", date: "2026-09-15", item: "카페", amount: 32000, category: "카페", paidBy: "b", splitAmong: "attendees" },
-    { sessionId: "2026-09-15", date: "2026-09-15", item: "스터디룸 2시간", amount: 24000, category: "장소", paidBy: "a", splitAmong: "attendees" },
-    { sessionId: "2026-09-15", date: "2026-09-14", item: "자료 인쇄", amount: 13700, category: "기타", paidBy: "a", splitAmong: "attendees" },
-  ];
-  const P = [{ sessionId: "2026-09-15", from: "d", to: "a", amount: 33200, date: "2026-09-16" }];
-  const r = computeSettlement({ expenses: E, payments: P, sessionsById: S, members: M });
+  const S = Object.fromEntries(SESSIONS.map(s => [s.id, s]));
+  const E1 = E.filter(x => x.sessionId === "2026-09-15");
+  const r = computeSettlement({ expenses: E1, payments: P, sessionsById: S, members: M });
   window.__r = r;
   renderSettlement(document.getElementById("settle"), r, { payments: P, subtitle: "2026.09.15 (화)" });
 
-  const r2 = computeSettlement({ expenses: [...E, E[1]], payments: [], sessionsById: S, members: M });
+  const r2 = computeSettlement({ expenses: [...E1, E1[1]], payments: [], sessionsById: S, members: M });
   window.__r2 = r2;
   renderSettlement(document.getElementById("settle-bad"), r2, {});
   renderSettlement(document.getElementById("settle-empty"), computeSettlement({ members: M }), { adminHint: "../admin.html" });

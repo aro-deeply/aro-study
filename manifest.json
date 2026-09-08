@@ -1,0 +1,14 @@
+{
+ "name": "HR STUDY 모임 기록",
+ "short_name": "HR STUDY",
+ "start_url": "/aro-study/",
+ "scope": "/aro-study/",
+ "display": "standalone",
+ "background_color": "#FAFAF7",
+ "theme_color": "#FAFAF7",
+ "lang": "ko",
+ "icons": [
+  { "src": "/aro-study/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+  { "src": "/aro-study/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+ ]
+}
