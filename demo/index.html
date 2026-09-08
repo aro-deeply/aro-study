@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>정산 미리보기 (예시 데이터)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/style.css">
+</head><body>
+<div class="wrap">
+  <div class="kicker"><span>HR STUDY</span><span>WEEK 01 (예시)</span></div>
+  <h1>첫 모임: 스터디 운영 방식과 첫 브리프 토론</h1>
+  <p class="sub meta-line">2026.09.15 (화) · 참석 5명</p>
+  <h2><em>3</em>정산</h2>
+  <div id="settle"></div>
+  <h2>검산 실패 예시</h2>
+  <div id="settle-bad"></div>
+  <h2>지출 없음</h2>
+  <div id="settle-empty"></div>
+</div>
+<script type="module">
+  import { computeSettlement, renderSettlement } from "../assets/settle.js";
+  import * as app from "../assets/app.js";
+  // 예시 멤버(가명)를 members 캐시에 직접 넣는다. Firestore 접근 없음.
+  const M = [
+    { id: "a", name: "멤버A", order: 1, role: "admin", active: true },
+    { id: "b", name: "멤버B", order: 2, role: "member", active: true },
+    { id: "c", name: "멤버C", order: 3, role: "member", active: true },
+    { id: "d", name: "멤버D", order: 4, role: "member", active: true },
+    { id: "e", name: "멤버E", order: 5, role: "member", active: true },
+  ];
+  app.setMembers(M);
+
+  const S = { "2026-09-15": { attendees: ["a", "b", "c", "d", "e"] } };
+  const E = [
+    { sessionId: "2026-09-15", date: "2026-09-15", item: "저녁 식사", amount: 96500, category: "식사", paidBy: "a", splitAmong: "attendees" },
+    { sessionId: "2026-09-15", date: "2026-09-15", item: "카페", amount: 32000, category: "카페", paidBy: "b", splitAmong: "attendees" },
+    { sessionId: "2026-09-15", date: "2026-09-15", item: "스터디룸 2시간", amount: 24000, category: "장소", paidBy: "a", splitAmong: "attendees" },
+    { sessionId: "2026-09-15", date: "2026-09-14", item: "자료 인쇄", amount: 13700, category: "기타", paidBy: "a", splitAmong: "attendees" },
+  ];
+  const P = [{ sessionId: "2026-09-15", from: "d", to: "a", amount: 33200, date: "2026-09-16" }];
+  const r = computeSettlement({ expenses: E, payments: P, sessionsById: S, members: M });
+  window.__r = r;
+  renderSettlement(document.getElementById("settle"), r, { payments: P, subtitle: "2026.09.15 (화)" });
+
+  const r2 = computeSettlement({ expenses: [...E, E[1]], payments: [], sessionsById: S, members: M });
+  window.__r2 = r2;
+  renderSettlement(document.getElementById("settle-bad"), r2, {});
+  renderSettlement(document.getElementById("settle-empty"), computeSettlement({ members: M }), { adminHint: "../admin.html" });
+  window.__done = true;
+</script>
+</body></html>

@@ -98,6 +98,8 @@ export async function loadMembers(force = false) {
   return membersCache;
 }
 export function members() { return membersCache || []; }
+/** 이미 읽어 둔 목록(또는 미리보기용 예시)을 캐시에 넣는다. */
+export function setMembers(list) { membersCache = Array.isArray(list) ? list : null; }
 export function activeMembers() { return members().filter(m => m.active !== false); }
 export function memberById(id) { return members().find(m => m.id === id) || null; }
 export function memberName(id) { return memberById(id)?.name || "(알 수 없음)"; }

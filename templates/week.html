@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAFAF7">
+<title>{{TITLE}} · HR STUDY</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<!--
+  주차 페이지 템플릿. weeks/<YYYY-MM-DD>/index.html 로 복제해서 쓴다.
+  치환할 자리: {{SESSION_ID}} {{WEEK_NO}} {{DATE_LABEL}} {{TITLE}} {{CONTENT}} {{NEXT_PLAN}}
+  정적 HTML에 두는 것: 제목, 날짜, 그날 다룬 내용 요약, 관련 브리프 링크, 다음 모임 계획.
+  이름·금액·의견·참석자는 전부 Firestore에서 읽는다. 여기 하드코딩하지 않는다.
+  금지: em dash(—), 이모지, 세리프 폰트.
+-->
+<body data-session="{{SESSION_ID}}">
+<div id="topbar"></div>
+<div class="wrap">
+  <div class="kicker"><span>HR STUDY</span><span>WEEK {{WEEK_NO}}</span></div>
+  <h1>{{TITLE}}</h1>
+  <p class="sub meta-line">{{DATE_LABEL}} · 참석 <span id="attendees" class="muted">불러오는 중</span></p>
+
+  <h2><em>1</em>이날의 내용</h2>
+  <div class="doc" id="content">
+{{CONTENT}}
+  </div>
+  <!-- 관련 브리프가 있으면 위 CONTENT 안에 아래 카드 형식으로 넣는다.
+  <a class="brief-link" href="https://aro-deeply.github.io/aro-briefs/briefs/YYYY-MM-DD-slug/" target="_blank" rel="noopener">
+    <span class="k">CASE BRIEF 00</span><span class="t">브리프 제목</span><span class="go">브리프 열기</span></a>
+  -->
+
+  <h2><em>2</em>다음 모임 계획</h2>
+  <div class="q" id="next-plan"><div class="lab">NEXT</div><p>{{NEXT_PLAN}}</p></div>
+
+  <h2><em>3</em>정산</h2>
+  <div id="settle"></div>
+
+  <h2><em>4</em>의견 <span class="cnt" id="comment-count"></span></h2>
+  <div id="comments"><div class="empty">의견 기능은 준비 중입니다.</div></div>
+
+  <p class="foot">HR STUDY · 모임 기록. 이름과 금액은 로그인한 멤버에게만 보입니다. <a href="../../">목록으로</a></p>
+</div>
+
+<script type="module">
+  import { ready, esc, memberName, fmtDate, $ } from "../../assets/app.js";
+  import { mountSettlement } from "../../assets/settle.js";
+
+  const sessionId = document.body.dataset.session || location.pathname.split("/").filter(Boolean).slice(-1)[0];
+  await ready();
+  const data = await mountSettlement($("#settle"), sessionId, { adminHint: "../../admin.html" });
+  const s = data?.session;
+  const att = $("#attendees");
+  if (s?.attendees?.length) { att.textContent = s.attendees.map(memberName).join(", ") + ` (${s.attendees.length}명)`; att.className = ""; }
+  else att.textContent = s ? "미정" : "세션 정보 없음";
+  // 정적 계획이 비어 있으면 Firestore의 nextPlan을 보여 준다.
+  const np = $("#next-plan p");
+  if (np && !np.textContent.trim() && s?.nextPlan) np.textContent = s.nextPlan;
+  document.addEventListener("aro:me", () => location.reload());
+</script>
+</body></html>
