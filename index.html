@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAFAF7">
+<title>HR STUDY · 모임 기록</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head><body>
+<div id="topbar"></div>
+<div class="wrap">
+  <div class="kicker"><span>HR STUDY</span><span>모임 기록</span></div>
+  <h1>연결 확인</h1>
+  <p class="sub">3단계 확인용 임시 화면입니다. 7단계에서 주차 목록과 누적 정산으로 바뀝니다.</p>
+  <div id="status" class="card"><span class="muted">확인 중</span></div>
+</div>
+<script type="module">
+  import { ready, members, activeMembers, getMe, memberName, isAdmin, esc } from "./assets/app.js";
+  const box = document.getElementById("status");
+  try {
+    const { user, me } = await ready();
+    const all = members(), act = activeMembers();
+    box.innerHTML = `
+      <div class="lab">로그인</div><p>공용 계정으로 로그인됨 (세션 유지 중)</p>
+      <div class="lab">선택한 이름</div><p>${me ? esc(memberName(me)) + (isAdmin() ? ' <span class="tag">총무</span>' : "") : '<span class="muted">아직 없음 (멤버 등록 후 선택)</span>'}</p>
+      <div class="lab">Firestore members</div><p>${all.length ? `${all.length}명 등록 (활성 ${act.length}명)` : '<span class="muted">0명. admin.html에서 추가하면 여기 표시됩니다.</span>'}</p>`;
+  } catch (ex) {
+    console.error(ex);
+    box.innerHTML = `<div class="note warn">연결 실패: ${esc(ex.message || ex)}</div>`;
+  }
+  document.addEventListener("aro:me", () => location.reload());
+</script>
+</body></html>
