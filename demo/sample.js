@@ -8,7 +8,7 @@ export const MEMBERS = [
   { id: "e", name: "멤버E", order: 5, role: "member", active: true },
 ];
 export const TERMS = [
-  { id: "t1", name: "1기", start: "2026-09-01", end: "2027-02-28", fee: 50000, memberIds: null, note: "남는 돈은 다음 기수로 이월" },
+  { id: "t1", name: "2026 하반기 회비", start: "2026-09-01", end: "2027-02-28", fee: 50000, memberIds: null, note: "남는 돈 처리는 미정" },
 ];
 export const DUES = [
   { id: "d1", termId: "t1", memberId: "a", amount: 50000, date: "2026-09-10" },

@@ -57,7 +57,7 @@
 
   <!-- 회비 -->
   <section data-tab="dues">
-    <div class="field sess-pick"><label for="d-term">기수</label><select id="d-term"></select></div>
+    <div class="field sess-pick"><label for="d-term">회비 설정</label><select id="d-term"></select></div>
     <div id="dues-summary"></div>
     <div class="rows" id="dues-list"></div>
 
@@ -76,25 +76,25 @@
     </form>
 
     <form class="card" id="f-term" style="margin-top:26px">
-      <div class="form-title"><b id="term-form-title">기수 만들기</b><button type="button" class="link-btn hidden" id="term-cancel">새로 입력</button></div>
-      <div class="note">기수 = 회비를 한 번 걷어 쓰는 기간(예: 6개월). 이름, 기간, 1인 회비를 정하면 납부 현황이 위에 표시됩니다.</div>
+      <div class="form-title"><b id="term-form-title">회비 설정 만들기</b><button type="button" class="link-btn hidden" id="term-cancel">새로 입력</button></div>
+      <div class="note">1인 회비 금액만 정하면 됩니다. 기간은 미정이면 비워 두고, 나중에 "수정"으로 채우면 됩니다. 저장하면 위에 멤버별 납부 현황이 표시됩니다.</div>
       <div class="row stack">
-        <div class="field"><label for="t-name">이름</label><input id="t-name" type="text" required placeholder="예: 1기" autocomplete="off"></div>
+        <div class="field"><label for="t-name">이름</label><input id="t-name" type="text" placeholder="비우면 '회비' (예: 2026 하반기 회비)" autocomplete="off"></div>
         <div class="field"><label for="t-fee">1인 회비 (원)</label><input id="t-fee" class="big" type="text" inputmode="numeric" required placeholder="50,000" autocomplete="off"></div>
       </div>
       <div class="row stack">
-        <div class="field"><label for="t-start">시작일</label><input id="t-start" type="date" required></div>
-        <div class="field"><label for="t-end">종료일</label><input id="t-end" type="date"><div class="help">비워 두면 기한 없음</div></div>
+        <div class="field"><label for="t-start">시작일</label><input id="t-start" type="date"><div class="help">미정이면 비워 둠</div></div>
+        <div class="field"><label for="t-end">종료일</label><input id="t-end" type="date"><div class="help">미정이면 비워 둠</div></div>
       </div>
       <div class="field"><label>대상 멤버</label>
         <div class="seg split-mode" id="t-mode"><button type="button" data-v="all" class="on">활성 멤버 전원</button><button type="button" data-v="custom">직접 선택</button></div>
         <div class="checks hidden" id="t-members"></div>
         <div class="help">"활성 멤버 전원"이면 나중에 추가한 멤버도 자동으로 대상에 들어갑니다.</div>
       </div>
-      <div class="field"><label for="t-note">메모</label><input id="t-note" type="text" placeholder="선택 (예: 남는 돈은 다음 기수로 이월)"></div>
+      <div class="field"><label for="t-note">메모</label><input id="t-note" type="text" placeholder="선택 (예: 남는 돈 처리 방식 미정)"></div>
       <div class="actions"><button class="btn" type="submit">저장</button><span class="spacer"></span><button class="btn danger hidden" type="button" id="term-delete">삭제</button></div>
     </form>
-    <div class="lab" style="margin-top:22px">기수 목록</div>
+    <div class="lab" style="margin-top:22px">회비 설정 목록</div>
     <div class="rows" id="term-list"></div>
   </section>
 
@@ -191,7 +191,7 @@ let sessions = [];        // 최신순
 let expenses = [];        // 선택 세션
 let payments = [];        // 선택 세션
 let terms = [];           // 시작일 내림차순
-let dues = [];            // 선택 기수
+let dues = [];            // 선택한 회비 설정
 let editing = { member: null, session: null, expense: null, term: null };
 let splitMode = "attendees";
 let source = "fund";
@@ -309,18 +309,18 @@ function bindDues() {
     $$("#t-mode button").forEach(x => x.classList.toggle("on", x === b));
     $("#t-members").classList.toggle("hidden", termMode !== "custom");
   });
-  // 기수 저장
+  // 회비 설정 저장
   $("#f-term").addEventListener("submit", async e => {
     e.preventDefault();
     const fee = num($("#t-fee").value); if (fee <= 0) { toast("1인 회비를 입력하세요"); $("#t-fee").focus(); return; }
     const memberIds = termMode === "custom" ? $$("#t-members input:checked").map(i => i.value) : null;
     if (termMode === "custom" && !memberIds.length) { toast("대상 멤버를 선택하세요"); return; }
-    const data = { name: $("#t-name").value.trim(), fee, start: $("#t-start").value, end: $("#t-end").value || "", memberIds, note: $("#t-note").value.trim(), updatedAt: serverTimestamp() };
+    const data = { name: $("#t-name").value.trim() || "회비", fee, start: $("#t-start").value || "", end: $("#t-end").value || "", memberIds, note: $("#t-note").value.trim(), updatedAt: serverTimestamp() };
     try {
       let id = editing.term;
       if (id) await updateDoc(doc(db, "terms", id), data);
       else id = (await addDoc(collection(db, "terms"), { ...data, createdAt: serverTimestamp() })).id;
-      toast(editing.term ? "수정했습니다" : "기수를 만들었습니다");
+      toast(editing.term ? "수정했습니다" : "회비 설정을 만들었습니다");
       resetTermForm(); await loadTerms(); $("#d-term").value = id; await loadDues(id);
     } catch (ex) { fail(ex); }
   });
@@ -329,7 +329,7 @@ function bindDues() {
     const t = termById(editing.term); if (!t) return;
     let ds = [];
     try { ds = (await getDocs(query(collection(db, "dues"), where("termId", "==", t.id)))).docs; } catch (ex) { fail(ex); return; }
-    if (!confirm(`${t.name || "기수"}를 삭제할까요?${ds.length ? ` 납부 기록 ${ds.length}건도 함께 삭제됩니다.` : ""}`)) return;
+    if (!confirm(`"${t.name || "회비"}" 설정을 삭제할까요?${ds.length ? ` 납부 기록 ${ds.length}건도 함께 삭제됩니다.` : ""}`)) return;
     try {
       for (const d of ds) await deleteDoc(d.ref);
       await deleteDoc(doc(db, "terms", t.id));
@@ -340,7 +340,7 @@ function bindDues() {
     const b = e.target.closest("button"); if (!b) return;
     const t = termById(b.dataset.id); if (!t) return;
     editing.term = t.id;
-    $("#term-form-title").textContent = `수정: ${t.name || "기수"}`; $("#term-cancel").classList.remove("hidden"); $("#term-delete").classList.remove("hidden");
+    $("#term-form-title").textContent = `수정: ${t.name || "회비"}`; $("#term-cancel").classList.remove("hidden"); $("#term-delete").classList.remove("hidden");
     $("#t-name").value = t.name || ""; $("#t-fee").value = fmtWon(t.fee); $("#t-start").value = t.start || ""; $("#t-end").value = t.end || ""; $("#t-note").value = t.note || "";
     const custom = Array.isArray(t.memberIds) && t.memberIds.length;
     $(`#t-mode button[data-v="${custom ? "custom" : "all"}"]`).click();
@@ -350,7 +350,7 @@ function bindDues() {
   // 납부 기록 직접 입력
   $("#f-due").addEventListener("submit", async e => {
     e.preventDefault();
-    const termId = $("#d-term").value; if (!termId) { toast("기수를 먼저 만드세요"); return; }
+    const termId = $("#d-term").value; if (!termId) { toast("회비 설정을 먼저 만드세요"); return; }
     const amount = num($("#d-amount").value); if (amount <= 0) { toast("금액을 입력하세요"); return; }
     try {
       await addDoc(collection(db, "dues"), { termId, memberId: $("#d-member").value, amount, date: $("#d-date").value || todayStr(), note: $("#d-note").value.trim(), createdAt: serverTimestamp(), createdBy: me || "" });
@@ -380,21 +380,21 @@ function resetTermForm() {
   editing.term = null; $("#f-term").reset();
   $("#t-members").innerHTML = memberChecks(activeMembers().map(m => m.id));
   $('#t-mode button[data-v="all"]').click();
-  $("#term-form-title").textContent = "기수 만들기"; $("#term-cancel").classList.add("hidden"); $("#term-delete").classList.add("hidden");
+  $("#term-form-title").textContent = "회비 설정 만들기"; $("#term-cancel").classList.add("hidden"); $("#term-delete").classList.add("hidden");
 }
 function renderTerms() {
   $("#term-list").innerHTML = terms.length ? terms.map(t => `
     <div class="rowi"><div class="main">${esc(t.name || "(이름 없음)")}<small>${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · ${Array.isArray(t.memberIds) && t.memberIds.length ? `대상 ${t.memberIds.length}명` : "활성 멤버 전원"}${t.note ? " · " + esc(t.note) : ""}</small></div>
-    <span class="ops"><button class="link-btn" data-id="${t.id}">수정</button></span></div>`).join("") : '<div class="empty">아직 기수가 없습니다. 아래에서 첫 기수를 만드세요.</div>';
+    <span class="ops"><button class="link-btn" data-id="${t.id}">수정</button></span></div>`).join("") : '<div class="empty">아직 회비 설정이 없습니다. 아래에서 1인 회비를 정하세요.</div>';
 }
 function renderTermSelect() {
   const sel = $("#d-term"), cur = sel.value;
-  sel.innerHTML = terms.map(t => `<option value="${t.id}">${esc(t.name || "(이름 없음)")} · ${esc(termPeriod(t))}</option>`).join("") || '<option value="">기수를 먼저 만드세요 (아래)</option>';
+  sel.innerHTML = terms.map(t => `<option value="${t.id}">${esc(t.name || "(이름 없음)")} · ${esc(termPeriod(t))}</option>`).join("") || '<option value="">회비 설정을 먼저 만드세요 (아래)</option>';
   if (cur && termById(cur)) sel.value = cur;
 }
 function renderDues() {
   const t = termById($("#d-term").value);
-  if (!t) { $("#dues-summary").innerHTML = ""; $("#dues-list").innerHTML = '<div class="empty">기수를 만들면 멤버별 납부 현황이 여기 표시됩니다.</div>'; return; }
+  if (!t) { $("#dues-summary").innerHTML = ""; $("#dues-list").innerHTML = '<div class="empty">회비 설정을 만들면 멤버별 납부 현황이 여기 표시됩니다.</div>'; return; }
   const f = computeFund({ terms: [t], dues, members: members() });
   const ft = f.terms[0];
   $("#dues-summary").innerHTML = `<div class="note${ft.unpaid.length ? " warn" : " ok"}">${esc(ft.name || "")} 납부 ${ft.paidCount}/${ft.rows.length}명 · ${fmtWon(ft.collected)} / ${fmtWon(ft.expected)}원${ft.unpaid.length ? ` · 미납: ${ft.unpaid.map(r => esc(r.name)).join(", ")}` : " · 전원 납부 완료"}</div>`;

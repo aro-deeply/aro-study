@@ -1,6 +1,6 @@
 /* aro-study 회비(기금) 계산과 렌더.
 
-   운영 방식(기본): 기수마다 1인 회비를 걷어 총무가 보관하고, 모임 비용은 그 회비에서 쓴다.
+   운영 방식(기본): 1인 회비를 걷어 총무가 보관하고, 모임 비용은 그 회비에서 쓴다. 회비 설정(terms)은 금액과 선택적 기간을 담는다.
    회비를 넘는 추가 비용만 참석자끼리 n분의 1로 나눈다(settle.js).
 
    컬렉션:
@@ -53,7 +53,7 @@ export function computeFund({ terms = [], dues = [], expenses = [], payments = [
     .sort((a, b) => order(a.id) - order(b.id));
   const reimburseTotal = reimburse.reduce((s, r) => s + Math.max(0, r.remaining), 0);
 
-  // 기수별 납부 현황
+  // 회비 설정별 납부 현황
   const termList = terms.slice().sort((a, b) => (b.start || "").localeCompare(a.start || ""));
   const termsOut = termList.map(t => {
     const fee = amt(t.fee);
@@ -82,7 +82,7 @@ export function computeFund({ terms = [], dues = [], expenses = [], payments = [
   return { adminId, income, spent, balance, fundExpenses, reimburse, reimburseTotal, terms: termsOut, current, duesCount: dues.length };
 }
 
-/** 기수 기간 문구: "2026.09 ~ 2027.02" */
+/** 회비 기간 문구: "2026.09 ~ 2027.02", 둘 다 비어 있으면 "기간 미정" */
 export function termPeriod(t) {
   const ym = s => s ? String(s).slice(0, 7).replace("-", ".") : "";
   if (!t) return "";
@@ -92,7 +92,7 @@ export function termPeriod(t) {
 const statusTag = r => r.status === "paid" ? '<span class="tag ok">납부</span>' : r.status === "partial" ? '<span class="tag warn">일부</span>' : '<span class="tag warn">미납</span>';
 
 /**
- * 회비 현황 렌더(목록 화면). 잔액 요약 + 현재 기수 납부 표 + 보전할 돈.
+ * 회비 현황 렌더(목록 화면). 잔액 요약 + 현재 회비 설정의 납부 표 + 보전할 돈.
  * @param {HTMLElement} root
  * @param {ReturnType<computeFund>} f
  * @param {{me?: string, adminHint?: string, termId?: string}} opt
@@ -100,7 +100,7 @@ const statusTag = r => r.status === "paid" ? '<span class="tag ok">납부</span>
 export function renderFund(root, f, opt = {}) {
   const t = opt.termId ? f.terms.find(x => x.id === opt.termId) : f.current;
   if (!t && !f.duesCount && !f.fundExpenses.length) {
-    root.innerHTML = `<div class="empty">아직 회비 기수가 없습니다.${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#dues">관리 화면</a>에서 기수(기간, 1인 회비)를 만들면 여기 표시됩니다.' : ""}</div>`;
+    root.innerHTML = `<div class="empty">아직 회비 설정이 없습니다.${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#dues">관리 화면</a>에서 1인 회비를 정하면 여기 표시됩니다.' : ""}</div>`;
     return;
   }
   const neg = f.balance < 0;
@@ -108,8 +108,8 @@ export function renderFund(root, f, opt = {}) {
     <div class="st-head">
       <div class="st-total${neg ? " neg" : ""}"><div class="lab">회비 잔액</div><b>${fmtWon(f.balance)}<small>원</small></b>
         <span>납부 ${fmtWon(f.income)}원 - 지출 ${fmtWon(f.spent)}원${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
-      <div class="st-rule"><div class="lab">${t ? esc(t.name || "기수") : "기수 없음"}</div>
-        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기수 지출 ${fmtWon(t.spent)}원` : ""}</div>` : "기수 없이 기록된 납부·지출만 합산했습니다."}
+      <div class="st-rule"><div class="lab">${t ? esc(t.name || "회비") : "회비 설정 없음"}</div>
+        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>` : "회비 설정 없이 기록된 납부·지출만 합산했습니다."}
         ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액을 넘었습니다. 추가 회비를 걷거나 초과분을 참석자 n분의 1로 나눕니다.</div>' : ""}</div>
     </div>`;
 
@@ -130,7 +130,7 @@ export function renderFund(root, f, opt = {}) {
 
   const others = f.terms.filter(x => x !== t);
   const past = others.length
-    ? `<div class="lab" style="margin-top:16px">다른 기수</div>${others.map(x => `<div class="rowi"><div class="main">${esc(x.name || "기수")}<small>${esc(termPeriod(x))} · 1인 ${fmtWon(x.fee)}원 · 납부 ${x.paidCount}/${x.rows.length}명</small></div><span class="amt">${fmtWon(x.collected)}</span></div>`).join("")}`
+    ? `<div class="lab" style="margin-top:16px">이전 회비 설정</div>${others.map(x => `<div class="rowi"><div class="main">${esc(x.name || "기수")}<small>${esc(termPeriod(x))} · 1인 ${fmtWon(x.fee)}원 · 납부 ${x.paidCount}/${x.rows.length}명</small></div><span class="amt">${fmtWon(x.collected)}</span></div>`).join("")}`
     : "";
 
   root.innerHTML = `${head}

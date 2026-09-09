@@ -182,7 +182,7 @@ export async function fetchSessionData(sessionId) {
   return { session, expenses, payments };
 }
 
-/** 회비 잔액 계산에 필요한 전체 자료(기수, 납부, 회비 지출, 회비 보전 송금). */
+/** 회비 잔액 계산에 필요한 전체 자료(회비 설정, 납부, 회비 지출, 회비 보전 송금). */
 export async function fetchFundData() {
   const [tSnap, dSnap, eSnap, pSnap] = await Promise.all([
     getDocs(collection(db, "terms")),

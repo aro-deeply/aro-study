@@ -29,7 +29,7 @@
   </div>
 
   <h2>회비 현황 <span class="cnt" id="fund-sub"></span></h2>
-  <p class="secsub">기수마다 1인 회비를 걷어 총무가 보관하고, 모임 비용은 이 회비에서 씁니다. 잔액 = 납부 합계 - 회비 지출 합계.</p>
+  <p class="secsub">1인 회비를 걷어 총무가 보관하고, 모임 비용은 이 회비에서 씁니다. 잔액 = 납부 합계 - 회비 지출 합계.</p>
   <div id="fund"><div class="empty">불러오는 중</div></div>
 
   <h2>주차 목록 <span class="cnt" id="week-count"></span></h2>
@@ -90,7 +90,7 @@
     const won = '<small style="font-size:.875rem;font-weight:500">원</small>';
     statsEl.innerHTML = `
       <div class="stat"><b${f.balance < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(f.balance)}${won}</b><span>회비 잔액${cur ? ` (${esc(cur.name || "")} 납부 ${cur.paidCount}/${cur.rows.length}명)` : ""}</span></div>
-      <div class="stat"><b${unpaid.length ? ' style="color:var(--danger)"' : ""}>${cur ? unpaid.length + "명" : "-"}</b><span>${cur ? "미납" + (unpaid.length ? ": " + unpaid.map(p => esc(p.name)).join(", ") : " 없음") : "회비 기수 없음"}</span></div>
+      <div class="stat"><b${unpaid.length ? ' style="color:var(--danger)"' : ""}>${cur ? unpaid.length + "명" : "-"}</b><span>${cur ? "미납" + (unpaid.length ? ": " + unpaid.map(p => esc(p.name)).join(", ") : " 없음") : "회비 설정 없음"}</span></div>
       <div class="stat"><b style="font-size:1rem;line-height:1.4">${next}</b><span>다음 모임${latest ? " (" + fmtDate(latest.date, "short") + " 모임에서 정한 계획)" : ""}</span></div>`;
 
     // 회비 현황
