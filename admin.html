@@ -260,8 +260,19 @@ function bindSessions() {
   $("#session-cancel").addEventListener("click", resetSessionForm);
   $("#session-delete").addEventListener("click", async () => {
     const s = sessionById(editing.session); if (!s) return;
-    if (!confirm(`${sessionLabel(s)} 세션을 삭제할까요? 지출·의견 기록은 남지만 목록에서 사라집니다.`)) return;
-    try { await deleteDoc(doc(db, "sessions", s.id)); toast("삭제했습니다"); resetSessionForm(); await loadSessions(); } catch (ex) { fail(ex); }
+    // 세션에 딸린 지출·정산 완료 기록도 함께 지운다. 안 지우면 세션 없는 지출이 남아 누적 정산에 계속 잡힌다. 의견·하이라이트는 남긴다.
+    let ex = [], pay = [];
+    try {
+      ex = (await getDocs(query(collection(db, "expenses"), where("sessionId", "==", s.id)))).docs;
+      pay = (await getDocs(query(collection(db, "payments"), where("sessionId", "==", s.id)))).docs;
+    } catch (e) { fail(e); return; }
+    const extra = (ex.length || pay.length) ? ` 지출 ${ex.length}건, 정산 완료 ${pay.length}건도 함께 삭제됩니다.` : "";
+    if (!confirm(`${sessionLabel(s)} 세션을 삭제할까요?${extra} 의견 기록은 남습니다.`)) return;
+    try {
+      for (const d of [...ex, ...pay]) await deleteDoc(d.ref);
+      await deleteDoc(doc(db, "sessions", s.id));
+      toast("삭제했습니다"); resetSessionForm(); await loadSessions();
+    } catch (e) { fail(e); }
   });
   $("#session-list").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
