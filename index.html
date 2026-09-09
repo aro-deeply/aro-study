@@ -57,6 +57,8 @@
   try {
     let sessions, expenses, payments, comments, terms, dues;
     if (DEMO) {
+      // 예시 화면을 홈 화면에 추가하면 실제 사이트가 아니라 예시가 열리도록 별도 manifest를 쓴다.
+      const mf = document.querySelector('link[rel="manifest"]'); if (mf) mf.href = "demo/manifest.json";
       const S = await import("./demo/sample.js");
       setMembers(S.MEMBERS); me = "a";
       sessions = S.SESSIONS; expenses = S.EXPENSES; payments = S.PAYMENTS; comments = S.COMMENTS; terms = S.TERMS; dues = S.DUES;

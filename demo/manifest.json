@@ -1,0 +1,15 @@
+{
+ "name": "HR STUDY 예시 화면",
+ "short_name": "HR 예시",
+ "id": "/aro-study/demo/",
+ "start_url": "/aro-study/?demo=1",
+ "scope": "/aro-study/",
+ "display": "standalone",
+ "background_color": "#FAFAF7",
+ "theme_color": "#FAFAF7",
+ "lang": "ko",
+ "icons": [
+  { "src": "/aro-study/assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+  { "src": "/aro-study/assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+ ]
+}
