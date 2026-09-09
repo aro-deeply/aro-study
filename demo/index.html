@@ -27,21 +27,24 @@
   <h2><em>2</em>다음 모임 계획</h2>
   <div class="q"><div class="lab">NEXT</div><p>9월 29일(월) 19:30. 각자 자기 조직의 신입 온보딩 과제를 하나씩 가져온다.</p></div>
 
-  <h2><em>3</em>정산</h2>
-  <div id="settle"></div>
+  <h2><em>3</em>비용</h2>
+  <div id="settle"><div id="settle-fund"></div><div id="settle-split"></div></div>
   <h2><em>4</em>의견 <span class="cnt" id="comment-count"></span></h2>
   <div id="comments"></div>
 
-  <h2>검산 실패 예시</h2>
+  <h2>회비 현황 (목록 화면과 같은 구성)</h2>
+  <div id="fund"></div>
+  <h2>검산 실패 예시 (추가 비용 중복)</h2>
   <div id="settle-bad"></div>
   <h2>지출 없음</h2>
   <div id="settle-empty"></div>
 </div>
 <script type="module">
   import { computeSettlement, renderSettlement } from "../assets/settle.js";
+  import { computeFund, renderFund, renderSessionFund, isFund } from "../assets/fund.js";
   import { mountReader, mountComments, memoryStore } from "../assets/reader.js";
   import * as app from "../assets/app.js";
-  import { MEMBERS as M, SESSIONS, EXPENSES as E, PAYMENTS as P, COMMENTS, ANNOTATIONS } from "./sample.js";
+  import { MEMBERS as M, SESSIONS, EXPENSES as E, PAYMENTS as P, COMMENTS, ANNOTATIONS, TERMS, DUES } from "./sample.js";
   app.setMembers(M);
 
   // 하이라이트·메모·의견: 메모리 저장소(저장 안 됨). 나는 멤버A.
@@ -51,11 +54,20 @@
 
   const S = Object.fromEntries(SESSIONS.map(s => [s.id, s]));
   const E1 = E.filter(x => x.sessionId === "2026-09-15");
-  const r = computeSettlement({ expenses: E1, payments: P, sessionsById: S, members: M });
+  const P1 = P.filter(p => p.sessionId === "2026-09-15");
+  // 회비(기금) 전체: 기수, 납부, 회비 지출, 회비 보전 송금
+  const f = computeFund({ terms: TERMS, dues: DUES, expenses: E, payments: P, members: M, today: "2026-09-20" });
+  window.__fund = f;
+  renderSessionFund(document.getElementById("settle-fund"), { items: E1.filter(isFund), f, payments: P1 });
+  // 추가 비용(참석자 n분의 1): 회비 지출과 회비 보전 송금은 자동으로 제외된다.
+  const r = computeSettlement({ expenses: E1, payments: P1, sessionsById: S, members: M });
   window.__r = r;
-  renderSettlement(document.getElementById("settle"), r, { payments: P, subtitle: "2026.09.15 (화)" });
+  document.getElementById("settle-split").innerHTML = '<div class="lab" style="margin-top:22px">추가 비용 (참석자 n분의 1)</div><div id="settle-split-in"></div>';
+  renderSettlement(document.getElementById("settle-split-in"), r, { payments: P1, subtitle: "2026.09.15 (화)", totalLabel: "추가 비용" });
+  renderFund(document.getElementById("fund"), f, { me: ME, adminHint: "../admin.html" });
 
-  const r2 = computeSettlement({ expenses: [...E1, E1[1]], payments: [], sessionsById: S, members: M });
+  const dupItem = E1.find(x => x.id === "e4");
+  const r2 = computeSettlement({ expenses: [...E1, dupItem], payments: [], sessionsById: S, members: M });
   window.__r2 = r2;
   renderSettlement(document.getElementById("settle-bad"), r2, {});
   renderSettlement(document.getElementById("settle-empty"), computeSettlement({ members: M }), { adminHint: "../admin.html" });

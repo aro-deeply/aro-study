@@ -25,15 +25,16 @@
 <div class="wrap">
   <div class="kicker"><span>HR STUDY</span><span>총무 관리</span></div>
   <h1>관리</h1>
-  <p class="sub">멤버, 모임 세션, 지출 항목, 정산 완료 기록을 여기서 입력합니다. 이름과 금액은 모두 Firestore에 저장됩니다.</p>
+  <p class="sub">멤버, 회비 납부, 모임 세션, 지출, 송금 기록을 여기서 입력합니다. 이름과 금액은 모두 Firestore에 저장됩니다.</p>
   <div id="guard"></div>
 
   <div id="app" class="hidden">
   <div class="tabs" id="tabs">
     <button data-t="members" class="on" type="button">멤버</button>
+    <button data-t="dues" type="button">회비</button>
     <button data-t="sessions" type="button">세션</button>
     <button data-t="expenses" type="button">지출</button>
-    <button data-t="payments" type="button">정산 완료</button>
+    <button data-t="payments" type="button">송금 기록</button>
   </div>
 
   <!-- 멤버 -->
@@ -52,6 +53,49 @@
     </form>
     <div class="lab" style="margin-top:22px">멤버 목록</div>
     <div class="rows" id="member-list"></div>
+  </section>
+
+  <!-- 회비 -->
+  <section data-tab="dues">
+    <div class="field sess-pick"><label for="d-term">기수</label><select id="d-term"></select></div>
+    <div id="dues-summary"></div>
+    <div class="rows" id="dues-list"></div>
+
+    <form class="card" id="f-due" style="margin-top:18px">
+      <div class="form-title"><b>납부 기록 직접 입력</b></div>
+      <div class="note">위 목록의 "납부 처리"를 누르면 남은 회비 전액이 오늘 날짜로 기록됩니다. 금액이나 날짜가 다르면 여기서 입력하세요.</div>
+      <div class="row stack">
+        <div class="field"><label for="d-member">멤버</label><select id="d-member"></select></div>
+        <div class="field"><label for="d-amount">금액 (원)</label><input id="d-amount" class="big" type="text" inputmode="numeric" required placeholder="0" autocomplete="off"></div>
+      </div>
+      <div class="row stack">
+        <div class="field"><label for="d-date">납부일</label><input id="d-date" type="date" required></div>
+        <div class="field"><label for="d-note">비고</label><input id="d-note" type="text" placeholder="선택"></div>
+      </div>
+      <div class="actions"><button class="btn" type="submit">기록</button></div>
+    </form>
+
+    <form class="card" id="f-term" style="margin-top:26px">
+      <div class="form-title"><b id="term-form-title">기수 만들기</b><button type="button" class="link-btn hidden" id="term-cancel">새로 입력</button></div>
+      <div class="note">기수 = 회비를 한 번 걷어 쓰는 기간(예: 6개월). 이름, 기간, 1인 회비를 정하면 납부 현황이 위에 표시됩니다.</div>
+      <div class="row stack">
+        <div class="field"><label for="t-name">이름</label><input id="t-name" type="text" required placeholder="예: 1기" autocomplete="off"></div>
+        <div class="field"><label for="t-fee">1인 회비 (원)</label><input id="t-fee" class="big" type="text" inputmode="numeric" required placeholder="50,000" autocomplete="off"></div>
+      </div>
+      <div class="row stack">
+        <div class="field"><label for="t-start">시작일</label><input id="t-start" type="date" required></div>
+        <div class="field"><label for="t-end">종료일</label><input id="t-end" type="date"><div class="help">비워 두면 기한 없음</div></div>
+      </div>
+      <div class="field"><label>대상 멤버</label>
+        <div class="seg split-mode" id="t-mode"><button type="button" data-v="all" class="on">활성 멤버 전원</button><button type="button" data-v="custom">직접 선택</button></div>
+        <div class="checks hidden" id="t-members"></div>
+        <div class="help">"활성 멤버 전원"이면 나중에 추가한 멤버도 자동으로 대상에 들어갑니다.</div>
+      </div>
+      <div class="field"><label for="t-note">메모</label><input id="t-note" type="text" placeholder="선택 (예: 남는 돈은 다음 기수로 이월)"></div>
+      <div class="actions"><button class="btn" type="submit">저장</button><span class="spacer"></span><button class="btn danger hidden" type="button" id="term-delete">삭제</button></div>
+    </form>
+    <div class="lab" style="margin-top:22px">기수 목록</div>
+    <div class="rows" id="term-list"></div>
   </section>
 
   <!-- 세션 -->
@@ -83,7 +127,11 @@
         <div class="field"><label for="e-cat">카테고리</label><select id="e-cat"><option>식사</option><option>카페</option><option>장소</option><option>기타</option></select></div>
         <div class="field"><label for="e-paidby">낸 사람</label><select id="e-paidby"></select></div>
       </div>
-      <div class="field"><label>분배 대상</label>
+      <div class="field"><label>재원</label>
+        <div class="seg split-mode" id="e-source"><button type="button" data-v="fund" class="on">회비에서</button><button type="button" data-v="split">참석자 n분의 1</button></div>
+        <div class="help">회비에서 낸 지출은 개인 정산에 잡히지 않고 잔액만 줄어듭니다. 총무가 아닌 사람이 대신 결제했으면 "낸 사람"을 그 사람으로 두세요. 회비에서 보전할 돈으로 표시됩니다.</div>
+      </div>
+      <div class="field hidden" id="e-splitwrap"><label>분배 대상</label>
         <div class="seg split-mode" id="e-splitmode"><button type="button" data-v="attendees" class="on">참석자 전원</button><button type="button" data-v="custom">직접 선택</button></div>
         <div class="checks hidden" id="e-split"></div>
       </div>
@@ -98,8 +146,8 @@
   <section data-tab="payments">
     <div class="field sess-pick"><label for="p-session">세션</label><select id="p-session"></select></div>
     <form class="card" id="f-payment">
-      <div class="form-title"><b>정산 완료 기록</b></div>
-      <div class="note">누가 누구에게 얼마를 보냈는지 기록합니다. 주차 페이지의 정산 화면에서 "보낼 돈" 목록이 완료 표시로 바뀝니다.</div>
+      <div class="form-title"><b>송금 기록</b></div>
+      <div class="note">두 가지 경우에 씁니다. (1) 회비에서 보전: 총무가 아닌 사람이 회비 지출을 대신 결제해서 총무가 돌려준 돈. 보낸 사람을 "회비"로 고릅니다. (2) 추가 비용 정산: 참석자 n분의 1로 나눈 돈을 서로 보낸 기록. 기록하면 "보낼 돈" 목록이 완료 표시로 바뀝니다.</div>
       <div class="row stack">
         <div class="field"><label for="p-from">보낸 사람</label><select id="p-from"></select></div>
         <div class="field"><label for="p-to">받은 사람</label><select id="p-to"></select></div>
@@ -111,7 +159,7 @@
       </div>
       <div class="actions"><button class="btn" type="submit">기록</button></div>
     </form>
-    <div class="lab" style="margin-top:22px">이 세션의 정산 완료</div>
+    <div class="lab" style="margin-top:22px">이 세션의 송금 기록</div>
     <div class="rows" id="payment-list"></div>
   </section>
   </div>
@@ -123,6 +171,7 @@ import {
   loadMembers, members, activeMembers, memberName, memberById, isAdmin, getMe, renderTopbar,
   collection, doc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, serverTimestamp
 } from "./assets/app.js";
+import { computeFund, partyName, termPeriod, FUND_ID } from "./assets/fund.js";
 
 const { me } = await ready({ requireName: true });
 
@@ -141,8 +190,12 @@ if (members().length && !isAdmin()) {
 let sessions = [];        // 최신순
 let expenses = [];        // 선택 세션
 let payments = [];        // 선택 세션
-let editing = { member: null, session: null, expense: null };
+let terms = [];           // 시작일 내림차순
+let dues = [];            // 선택 기수
+let editing = { member: null, session: null, expense: null, term: null };
 let splitMode = "attendees";
+let source = "fund";
+let termMode = "all";
 
 const num = s => Number(String(s).replace(/[^\d-]/g, "")) || 0;
 const sessionLabel = s => `${fmtDate(s.date)} ${s.title || ""}`.trim();
@@ -159,9 +212,9 @@ function init() {
   const h = location.hash.replace("#", "");
   if (h && $(`#tabs button[data-t="${h}"]`)) $(`#tabs button[data-t="${h}"]`).click();
 
-  bindMembers(); bindSessions(); bindExpenses(); bindPayments();
+  bindMembers(); bindDues(); bindSessions(); bindExpenses(); bindPayments();
   renderMembers(); renderMemberSelects();
-  loadSessions();
+  loadSessions(); loadTerms();
 }
 
 /* ---------- 멤버 ---------- */
@@ -220,10 +273,135 @@ function memberChecks(checked = []) {
 function renderMemberSelects() {
   const admin = members().find(m => m.role === "admin")?.id;
   $("#e-paidby").innerHTML = memberOptions(admin);
-  $("#p-from").innerHTML = memberOptions();
+  $("#p-from").innerHTML = `<option value="${FUND_ID}">회비 (총무 보관)</option>` + memberOptions();
   $("#p-to").innerHTML = memberOptions(admin);
   $("#s-att").innerHTML = memberChecks(activeMembers().map(m => m.id));
   $("#e-split").innerHTML = memberChecks();
+  $("#d-member").innerHTML = memberOptions();
+  $("#t-members").innerHTML = memberChecks(activeMembers().map(m => m.id));
+}
+
+/* ---------- 회비 ---------- */
+async function loadTerms() {
+  try {
+    const snap = await getDocs(collection(db, "terms"));
+    terms = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.start || "").localeCompare(a.start || ""));
+  } catch (ex) { fail(ex); terms = []; }
+  renderTerms(); renderTermSelect();
+  await loadDues($("#d-term").value);
+}
+const termById = id => terms.find(t => t.id === id);
+async function loadDues(termId) {
+  if (!termId) { dues = []; renderDues(); return; }
+  try {
+    const snap = await getDocs(query(collection(db, "dues"), where("termId", "==", termId)));
+    dues = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch (ex) { fail(ex); dues = []; }
+  renderDues();
+}
+function bindDues() {
+  $("#d-date").value = todayStr();
+  $("#d-term").addEventListener("change", () => loadDues($("#d-term").value));
+  for (const id of ["d-amount", "t-fee"]) $("#" + id).addEventListener("blur", () => { const v = num($("#" + id).value); $("#" + id).value = v ? v.toLocaleString("ko-KR") : ""; });
+  $("#t-mode").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    termMode = b.dataset.v;
+    $$("#t-mode button").forEach(x => x.classList.toggle("on", x === b));
+    $("#t-members").classList.toggle("hidden", termMode !== "custom");
+  });
+  // 기수 저장
+  $("#f-term").addEventListener("submit", async e => {
+    e.preventDefault();
+    const fee = num($("#t-fee").value); if (fee <= 0) { toast("1인 회비를 입력하세요"); $("#t-fee").focus(); return; }
+    const memberIds = termMode === "custom" ? $$("#t-members input:checked").map(i => i.value) : null;
+    if (termMode === "custom" && !memberIds.length) { toast("대상 멤버를 선택하세요"); return; }
+    const data = { name: $("#t-name").value.trim(), fee, start: $("#t-start").value, end: $("#t-end").value || "", memberIds, note: $("#t-note").value.trim(), updatedAt: serverTimestamp() };
+    try {
+      let id = editing.term;
+      if (id) await updateDoc(doc(db, "terms", id), data);
+      else id = (await addDoc(collection(db, "terms"), { ...data, createdAt: serverTimestamp() })).id;
+      toast(editing.term ? "수정했습니다" : "기수를 만들었습니다");
+      resetTermForm(); await loadTerms(); $("#d-term").value = id; await loadDues(id);
+    } catch (ex) { fail(ex); }
+  });
+  $("#term-cancel").addEventListener("click", resetTermForm);
+  $("#term-delete").addEventListener("click", async () => {
+    const t = termById(editing.term); if (!t) return;
+    let ds = [];
+    try { ds = (await getDocs(query(collection(db, "dues"), where("termId", "==", t.id)))).docs; } catch (ex) { fail(ex); return; }
+    if (!confirm(`${t.name || "기수"}를 삭제할까요?${ds.length ? ` 납부 기록 ${ds.length}건도 함께 삭제됩니다.` : ""}`)) return;
+    try {
+      for (const d of ds) await deleteDoc(d.ref);
+      await deleteDoc(doc(db, "terms", t.id));
+      toast("삭제했습니다"); resetTermForm(); await loadTerms();
+    } catch (ex) { fail(ex); }
+  });
+  $("#term-list").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const t = termById(b.dataset.id); if (!t) return;
+    editing.term = t.id;
+    $("#term-form-title").textContent = `수정: ${t.name || "기수"}`; $("#term-cancel").classList.remove("hidden"); $("#term-delete").classList.remove("hidden");
+    $("#t-name").value = t.name || ""; $("#t-fee").value = fmtWon(t.fee); $("#t-start").value = t.start || ""; $("#t-end").value = t.end || ""; $("#t-note").value = t.note || "";
+    const custom = Array.isArray(t.memberIds) && t.memberIds.length;
+    $(`#t-mode button[data-v="${custom ? "custom" : "all"}"]`).click();
+    if (custom) $("#t-members").innerHTML = memberChecks(t.memberIds);
+    $("#f-term").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  // 납부 기록 직접 입력
+  $("#f-due").addEventListener("submit", async e => {
+    e.preventDefault();
+    const termId = $("#d-term").value; if (!termId) { toast("기수를 먼저 만드세요"); return; }
+    const amount = num($("#d-amount").value); if (amount <= 0) { toast("금액을 입력하세요"); return; }
+    try {
+      await addDoc(collection(db, "dues"), { termId, memberId: $("#d-member").value, amount, date: $("#d-date").value || todayStr(), note: $("#d-note").value.trim(), createdAt: serverTimestamp(), createdBy: me || "" });
+      toast("기록했습니다"); $("#d-amount").value = ""; $("#d-note").value = ""; await loadDues(termId);
+    } catch (ex) { fail(ex); }
+  });
+  // 목록의 납부 처리 / 취소
+  $("#dues-list").addEventListener("click", async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    const termId = $("#d-term").value, t = termById(termId); if (!t) return;
+    const mid = b.dataset.id, name = memberName(mid);
+    if (b.dataset.op === "pay") {
+      const paid = dues.filter(d => d.memberId === mid).reduce((s, d) => s + (Number(d.amount) || 0), 0);
+      const amount = Math.max(0, (Number(t.fee) || 0) - paid); if (!amount) return;
+      if (!confirm(`${name}: ${fmtWon(amount)}원 납부로 기록할까요? (오늘 날짜)`)) return;
+      try { await addDoc(collection(db, "dues"), { termId, memberId: mid, amount, date: todayStr(), note: "", createdAt: serverTimestamp(), createdBy: me || "" }); toast("납부 처리했습니다"); await loadDues(termId); }
+      catch (ex) { fail(ex); }
+    } else if (b.dataset.op === "undo") {
+      const mine = dues.filter(d => d.memberId === mid);
+      if (!confirm(`${name}의 납부 기록 ${mine.length}건을 삭제할까요? (미납으로 돌아갑니다)`)) return;
+      try { for (const d of mine) await deleteDoc(doc(db, "dues", d.id)); toast("취소했습니다"); await loadDues(termId); }
+      catch (ex) { fail(ex); }
+    }
+  });
+}
+function resetTermForm() {
+  editing.term = null; $("#f-term").reset();
+  $("#t-members").innerHTML = memberChecks(activeMembers().map(m => m.id));
+  $('#t-mode button[data-v="all"]').click();
+  $("#term-form-title").textContent = "기수 만들기"; $("#term-cancel").classList.add("hidden"); $("#term-delete").classList.add("hidden");
+}
+function renderTerms() {
+  $("#term-list").innerHTML = terms.length ? terms.map(t => `
+    <div class="rowi"><div class="main">${esc(t.name || "(이름 없음)")}<small>${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · ${Array.isArray(t.memberIds) && t.memberIds.length ? `대상 ${t.memberIds.length}명` : "활성 멤버 전원"}${t.note ? " · " + esc(t.note) : ""}</small></div>
+    <span class="ops"><button class="link-btn" data-id="${t.id}">수정</button></span></div>`).join("") : '<div class="empty">아직 기수가 없습니다. 아래에서 첫 기수를 만드세요.</div>';
+}
+function renderTermSelect() {
+  const sel = $("#d-term"), cur = sel.value;
+  sel.innerHTML = terms.map(t => `<option value="${t.id}">${esc(t.name || "(이름 없음)")} · ${esc(termPeriod(t))}</option>`).join("") || '<option value="">기수를 먼저 만드세요 (아래)</option>';
+  if (cur && termById(cur)) sel.value = cur;
+}
+function renderDues() {
+  const t = termById($("#d-term").value);
+  if (!t) { $("#dues-summary").innerHTML = ""; $("#dues-list").innerHTML = '<div class="empty">기수를 만들면 멤버별 납부 현황이 여기 표시됩니다.</div>'; return; }
+  const f = computeFund({ terms: [t], dues, members: members() });
+  const ft = f.terms[0];
+  $("#dues-summary").innerHTML = `<div class="note${ft.unpaid.length ? " warn" : " ok"}">${esc(ft.name || "")} 납부 ${ft.paidCount}/${ft.rows.length}명 · ${fmtWon(ft.collected)} / ${fmtWon(ft.expected)}원${ft.unpaid.length ? ` · 미납: ${ft.unpaid.map(r => esc(r.name)).join(", ")}` : " · 전원 납부 완료"}</div>`;
+  $("#dues-list").innerHTML = ft.rows.map(r => `
+    <div class="rowi${r.status === "paid" ? "" : " unpaid"}"><div class="main">${esc(r.name)} ${r.status === "paid" ? '<span class="tag ok">납부</span>' : r.status === "partial" ? '<span class="tag warn">일부</span>' : '<span class="tag warn">미납</span>'}
+      <small>${r.paid ? `${fmtDate(r.date, "short")} · ${fmtWon(r.paid)}원${r.dues.length > 1 ? ` (${r.dues.length}회)` : ""}${r.status === "partial" ? ` · ${fmtWon(r.fee - r.paid)}원 남음` : ""}` : `1인 회비 ${fmtWon(r.fee)}원`}</small></div>
+    <span class="ops">${r.status === "paid" ? `<button class="link-btn danger" data-op="undo" data-id="${r.id}">취소</button>` : `<button class="link-btn" data-op="pay" data-id="${r.id}">납부 처리</button>${r.paid ? `<button class="link-btn danger" data-op="undo" data-id="${r.id}">취소</button>` : ""}`}</span></div>`).join("");
 }
 
 /* ---------- 세션 ---------- */
@@ -314,6 +492,12 @@ async function loadExpenses(sessionId) {
 }
 function bindExpenses() {
   $("#e-session").addEventListener("change", () => { resetExpenseForm(); loadExpenses($("#e-session").value); });
+  $("#e-source").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    source = b.dataset.v;
+    $$("#e-source button").forEach(x => x.classList.toggle("on", x === b));
+    $("#e-splitwrap").classList.toggle("hidden", source !== "split");
+  });
   $("#e-splitmode").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
     splitMode = b.dataset.v;
@@ -325,12 +509,12 @@ function bindExpenses() {
     e.preventDefault();
     const sessionId = $("#e-session").value; if (!sessionId) { toast("세션을 먼저 만드세요"); return; }
     const amount = num($("#e-amount").value); if (amount <= 0) { toast("금액을 입력하세요"); $("#e-amount").focus(); return; }
-    const splitAmong = splitMode === "attendees" ? "attendees" : $$("#e-split input:checked").map(i => i.value);
-    if (splitMode === "custom" && !splitAmong.length) { toast("분배 대상을 선택하세요"); return; }
+    const splitAmong = source === "fund" || splitMode === "attendees" ? "attendees" : $$("#e-split input:checked").map(i => i.value);
+    if (source === "split" && splitMode === "custom" && !splitAmong.length) { toast("분배 대상을 선택하세요"); return; }
     const data = {
       sessionId, date: $("#e-date").value || sessionById(sessionId)?.date || todayStr(),
       item: $("#e-item").value.trim(), amount, category: $("#e-cat").value,
-      paidBy: $("#e-paidby").value, splitAmong, note: $("#e-note").value.trim()
+      source, paidBy: $("#e-paidby").value, splitAmong, note: $("#e-note").value.trim()
     };
     try {
       if (editing.expense) await updateDoc(doc(db, "expenses", editing.expense), data);
@@ -352,6 +536,7 @@ function bindExpenses() {
     $("#expense-form-title").textContent = `수정: ${x.item}`; $("#expense-cancel").classList.remove("hidden"); $("#expense-delete").classList.remove("hidden");
     $("#e-item").value = x.item || ""; $("#e-amount").value = fmtWon(x.amount); $("#e-date").value = x.date || ""; $("#e-cat").value = x.category || "기타"; $("#e-paidby").value = x.paidBy || "";
     $("#e-note").value = x.note || "";
+    $(`#e-source button[data-v="${x.source === "fund" ? "fund" : "split"}"]`).click();
     const custom = Array.isArray(x.splitAmong);
     $(`#e-splitmode button[data-v="${custom ? "custom" : "attendees"}"]`).click();
     if (custom) $("#e-split").innerHTML = memberChecks(x.splitAmong);
@@ -366,13 +551,15 @@ function resetExpenseForm(keepDate = false) {
   const admin = members().find(m => m.role === "admin")?.id; if (admin) $("#e-paidby").value = admin;
   $("#e-split").innerHTML = memberChecks();
   $('#e-splitmode button[data-v="attendees"]').click();
+  $('#e-source button[data-v="fund"]').click();
   $("#expense-form-title").textContent = "지출 추가"; $("#expense-cancel").classList.add("hidden"); $("#expense-delete").classList.add("hidden");
 }
 function renderExpenses() {
   const total = expenses.reduce((a, x) => a + (Number(x.amount) || 0), 0);
-  $("#expense-sum").textContent = expenses.length ? `${expenses.length}건 · 합계 ${fmtWon(total)}원` : "";
+  const fundTotal = expenses.filter(x => x.source === "fund").reduce((a, x) => a + (Number(x.amount) || 0), 0);
+  $("#expense-sum").textContent = expenses.length ? `${expenses.length}건 · 합계 ${fmtWon(total)}원${fundTotal !== total ? ` (회비 ${fmtWon(fundTotal)}원, n분의 1 ${fmtWon(total - fundTotal)}원)` : ""}` : "";
   $("#expense-list").innerHTML = expenses.length ? expenses.map(x => `
-    <div class="rowi"><div class="main">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category)} · ${esc(memberName(x.paidBy))} 냄 · ${Array.isArray(x.splitAmong) ? `${x.splitAmong.length}명 분배` : "참석자 전원"}${x.note ? " · " + esc(x.note) : ""}</small></div>
+    <div class="rowi"><div class="main">${esc(x.item)} ${x.source === "fund" ? '<span class="tag">회비</span>' : '<span class="tag warn">n분의 1</span>'}<small>${fmtDate(x.date, "short")} · ${esc(x.category)} · ${esc(memberName(x.paidBy))} 냄${x.source === "fund" ? "" : ` · ${Array.isArray(x.splitAmong) ? `${x.splitAmong.length}명 분배` : "참석자 전원"}`}${x.note ? " · " + esc(x.note) : ""}</small></div>
     <span class="amt">${fmtWon(x.amount)}</span><span class="ops"><button class="link-btn" data-id="${x.id}">수정</button></span></div>`).join("") : '<div class="empty">이 세션에 지출이 없습니다.</div>';
 }
 
@@ -403,14 +590,14 @@ function bindPayments() {
   $("#payment-list").addEventListener("click", async e => {
     const b = e.target.closest("button"); if (!b) return;
     const p = payments.find(v => v.id === b.dataset.id); if (!p) return;
-    if (!confirm(`${memberName(p.from)} → ${memberName(p.to)} ${fmtWon(p.amount)}원 기록을 삭제할까요?`)) return;
+    if (!confirm(`${partyName(p.from)} → ${partyName(p.to)} ${fmtWon(p.amount)}원 기록을 삭제할까요?`)) return;
     try { await deleteDoc(doc(db, "payments", p.id)); toast("삭제했습니다"); await loadPayments(p.sessionId); } catch (ex) { fail(ex); }
   });
 }
 function renderPayments() {
   $("#payment-list").innerHTML = payments.length ? payments.map(p => `
-    <div class="rowi"><div class="main">${esc(memberName(p.from))} <span class="soft">→</span> ${esc(memberName(p.to))}<small>${fmtDate(p.date, "short")}${p.note ? " · " + esc(p.note) : ""}</small></div>
-    <span class="amt">${fmtWon(p.amount)}</span><span class="ops"><button class="link-btn danger" data-id="${p.id}">삭제</button></span></div>`).join("") : '<div class="empty">아직 완료 기록이 없습니다.</div>';
+    <div class="rowi"><div class="main">${esc(partyName(p.from))} <span class="soft">→</span> ${esc(partyName(p.to))}${p.from === FUND_ID ? ' <span class="tag">회비 보전</span>' : ""}<small>${fmtDate(p.date, "short")}${p.note ? " · " + esc(p.note) : ""}</small></div>
+    <span class="amt">${fmtWon(p.amount)}</span><span class="ops"><button class="link-btn danger" data-id="${p.id}">삭제</button></span></div>`).join("") : '<div class="empty">아직 송금 기록이 없습니다.</div>';
 }
 
 /* ---------- 공통 ---------- */

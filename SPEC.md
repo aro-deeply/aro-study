@@ -60,12 +60,21 @@ aro-study/
 
 - `members/{memberId}`: `{ name, order, active, joinedAt }`
 - `sessions/{sessionId}`: sessionId는 `2026-09-XX` 형식. `{ date, title, attendees: [memberId], nextPlan, memo, createdAt }`. 주차 HTML의 메타를 미러링하되, 참석자는 여기만 둔다.
-- `expenses/{expenseId}`: `{ sessionId, date, item, amount, category, paidBy: memberId, splitAmong: [memberId] | "attendees", note, createdAt, createdBy }`. `splitAmong`이 `"attendees"`면 해당 세션 참석자 전원에게 균등 분배.
-- `payments/{paymentId}`: `{ sessionId, from: memberId, to: memberId, amount, date, note }`. 정산 완료 기록.
+- `terms/{termId}`: `{ name, start, end, fee, memberIds: [memberId] | null, note }`. 회비 기수(예: 1기, 6개월). `memberIds`가 null이면 활성 멤버 전원이 대상. (2026-09-09 추가)
+- `dues/{dueId}`: `{ termId, memberId, amount, date, note, createdAt }`. 회비 납부 기록. 한 사람이 여러 번 나눠 낼 수 있다.
+- `expenses/{expenseId}`: `{ sessionId, date, item, amount, category, source: "fund" | "split", paidBy: memberId, splitAmong: [memberId] | "attendees", note, createdAt, createdBy }`. `source`가 `"fund"`(기본)면 회비에서 쓴 지출이라 개인 정산에 잡히지 않고 잔액만 줄어든다. `"split"`이면 추가 비용으로 `splitAmong`(`"attendees"`면 세션 참석자 전원)에게 균등 분배. `source`가 없는 옛 문서는 `"split"`으로 본다.
+- `payments/{paymentId}`: `{ sessionId, from: memberId | "fund", to: memberId, amount, date, note }`. 송금 기록. `from`이 `"fund"`면 총무가 아닌 사람이 대신 결제한 회비 지출을 회비에서 보전한 것이고, 그 외는 추가 비용 정산 완료 기록.
 - `comments/{commentId}`: `{ sessionId, author: memberId, text, createdAt, parentId(null) }`. 1단계 답글까지만.
 - `annotations/{id}`: `{ sessionId, author, type: "highlight"|"memo", anchor, text, createdAt }`. anchor는 기존 reader.js가 쓰는 방식(문단 id + 오프셋)을 그대로 유지한다.
 
 인덱스가 필요하면 Firestore 콘솔 링크가 에러로 뜬다. 그 경우 사용자에게 링크를 눌러 인덱스를 만들도록 안내한다.
+
+### 3-1. 운영 방식 (2026-09-09 변경)
+
+- 기본: 기수마다 1인 회비를 걷어 총무가 보관하고, 모임 비용은 회비에서 쓴다. 잔액 = 납부 합계 - 회비 지출 합계 (누가 결제했는지와 무관).
+- 총무가 아닌 사람이 회비 지출을 대신 결제하면 "회비에서 보전할 돈"으로 표시하고, 총무가 보낸 뒤 `payments`에 `from: "fund"`로 기록하면 사라진다.
+- 회비 밖 추가 비용만 참석자 n분의 1(기존 정산 규칙: 100원 단위 내림, 뒷자리 총무 부담). 추가 비용이 없으면 개인 정산 표는 표시하지 않는다.
+- 회비 금액·기간·대상은 `terms`에서 바꿀 수 있고, 남는 돈의 이월·환급은 미정(기수 메모에 적는다).
 
 ## 4. 화면 요구사항
 
@@ -77,21 +86,23 @@ aro-study/
 
 ### 4-2. index.html (목록)
 - 주차 카드 목록(최신순): 날짜, 제목, 참석 인원, 다룬 브리프 링크 개수, 의견 개수.
-- 상단 요약: 이번 달 총 지출, 미납 인원 수, 다음 모임 일정(가장 최근 세션의 nextPlan).
-- "누적 정산" 섹션: 멤버별 낸 금액 / 부담해야 할 금액 / 차액(받을 돈은 +, 낼 돈은 -). 100원 단위 정산.
+- 상단 요약: 회비 잔액(현재 기수 납부 n/m명), 미납 인원과 이름, 다음 모임 일정(가장 최근 세션의 nextPlan).
+- "회비 현황" 섹션(`fund.js`): 잔액 카드(납부 합계 - 지출 합계), 현재 기수 정보, 멤버별 납부 표(상태·납부액·납부일, 미납 강조), 회비에서 보전할 돈, 다른 기수 요약.
+- 주차 카드에 그 회차 지출 합계.
+- "추가 비용 정산" 섹션: 참석자 n분의 1로 나눈 지출이 있을 때만 표시. 멤버별 낸 금액 / 부담액 / 남은 차액(받을 돈은 +, 낼 돈은 -), 보낼 돈.
 
 ### 4-3. weeks/<id>/index.html (주차 페이지)
 순서대로:
 1. 헤더: 날짜, 제목, 참석자(Firestore에서 이름 채움)
 2. 이날의 내용: 정적 HTML. 소제목 + 문단. 관련 브리프가 있으면 aro-briefs 링크 카드.
 3. 다음 모임 계획: 정적 HTML
-4. 정산: `settle.js`가 Firestore에서 이 세션의 expenses를 읽어 아래 6절 형식으로 렌더. 항목 목록, 카테고리 합계, 1인 부담액(참석자 기준 균등, 100원 단위, 뒷자리는 총무 부담이라는 기존 규칙을 기본값으로), 누가 얼마 냈고 누가 누구에게 얼마 보내야 하는지.
+4. 비용: `settle.js`의 `mountSettlement`가 이 세션의 expenses를 읽어 두 부분으로 렌더. (1) 회비 지출: 이 회차 합계, 현재 회비 잔액, 내역, 대신 결제분 보전 상태(`fund.js`). (2) 추가 비용(있을 때만): 아래 6절 형식. 항목 목록, 카테고리 합계, 1인 부담액(참석자 기준 균등, 100원 단위, 뒷자리는 총무 부담), 누가 얼마 냈고 누가 누구에게 얼마 보내야 하는지.
 5. 의견: 댓글 목록 + 입력. 작성자는 선택한 이름. 삭제는 본인 글만(클라이언트 판단, 규칙에서는 로그인만 검사).
 6. 하이라이트·메모: 기존 reader.js 기능. "내 것만 보기 / 전체 보기" 토글 추가. "AI용 복사"는 전체 메모를 사람별로 묶어 텍스트로 만든다.
 
 ### 4-4. admin.html (총무용)
 - 같은 로그인이지만 이름이 `총무` 권한(`members`에 `role: "admin"`)인 경우만 진입. 서버 검증은 하지 않는다(리스크 낮음, 사용자 판단).
-- 세션 만들기/수정(날짜, 제목, 참석자 체크, 다음 계획), 지출 항목 추가·수정·삭제(날짜, 항목, 금액, 카테고리, 낸 사람, 분배 대상), 정산 완료 기록, 멤버 추가·비활성화.
+- 탭 5개: 멤버(추가·비활성화), 회비(기수 만들기·수정·삭제, 멤버별 납부 현황과 "납부 처리"·취소, 납부 기록 직접 입력), 세션(만들기/수정/삭제, 삭제 시 지출·송금 기록 함께 삭제), 지출(항목, 금액, 날짜, 카테고리, 재원: 회비에서 / 참석자 n분의 1, 낸 사람, 분배 대상), 송금 기록(회비 보전 또는 추가 비용 정산 완료).
 - 지출 입력은 핸드폰에서 영수증 보고 바로 넣을 수 있게 큰 입력칸, 금액은 숫자 키패드(`inputmode="numeric"`).
 
 ## 5. 구현 단계 (이 순서로, 단계마다 확인)

@@ -1,20 +1,21 @@
 # aro-study
 
-HR 스터디 모임의 주차별 기록·비용 정산·의견 사이트. GitHub Pages 공개: https://aro-deeply.github.io/aro-study/
+HR 스터디 모임의 주차별 기록·회비 관리·의견 사이트. GitHub Pages 공개: https://aro-deeply.github.io/aro-study/
 설계 원문은 `SPEC.md`. 이 파일은 작업 규칙 요약이다.
 
 ## 구조
 
 - 정적 HTML/CSS/JS만 사용. 프레임워크·번들러·npm 빌드 금지. 사용자가 파일을 직접 열어 고칠 수 있어야 한다.
 - 백엔드는 Firebase(Firestore + Authentication, CDN 모듈 SDK 12.x). 공용 계정 하나로 로그인하고 "이름 선택"으로 작성자를 정한다.
-- `assets/app.js` 인증·이름 선택·상단 바·Firestore 헬퍼·유틸 / `assets/settle.js` 정산 계산·렌더 / `assets/reader.js` 하이라이트·메모·의견 / `assets/style.css` 공통 스타일(aro-briefs 톤).
-- `index.html` 목록·요약·누적 정산 / `admin.html` 총무 입력 / `weeks/<YYYY-MM-DD>/index.html` 주차 페이지 / `templates/week.html` 주차 원본 / `demo/` 로그인 없는 화면 예시.
+- `assets/app.js` 인증·이름 선택·상단 바·Firestore 헬퍼·유틸 / `assets/fund.js` 회비(기수·납부·잔액·보전) 계산·렌더 / `assets/settle.js` 추가 비용 n분의 1 정산 계산·렌더, 주차 페이지 비용 섹션 마운트 / `assets/reader.js` 하이라이트·메모·의견 / `assets/style.css` 공통 스타일(aro-briefs 톤).
+- `index.html` 회비 현황·목록·추가 비용 정산 / `admin.html` 총무 입력 / `weeks/<YYYY-MM-DD>/index.html` 주차 페이지 / `templates/week.html` 주차 원본 / `demo/` 로그인 없는 화면 예시.
 - `firestore.rules`는 콘솔에 붙여 넣는 용도. Firebase CLI 배포는 하지 않는다.
 
 ## 데이터 원칙
 
 - 정적 HTML에 두는 것: 제목, 날짜, 그날 다룬 내용 요약, 브리프 링크, 다음 모임 계획.
-- 멤버 이름·금액·의견·참석자·하이라이트는 전부 Firestore(`members`, `sessions`, `expenses`, `payments`, `comments`, `annotations`). HTML에 하드코딩하지 않는다.
+- 멤버 이름·금액·의견·참석자·하이라이트는 전부 Firestore(`members`, `terms`, `dues`, `sessions`, `expenses`, `payments`, `comments`, `annotations`). HTML에 하드코딩하지 않는다.
+- 운영 방식(2026-09-09): 기수별 회비를 걷어 회비에서 지출(`expenses.source: "fund"`, 기본값). 회비 밖 추가 비용만 `source: "split"`으로 참석자 n분의 1. `payments.from`이 `"fund"`면 회비에서 개인에게 보전한 송금. 자세한 것은 SPEC 3-1.
 - 세션 ID = 모임 날짜(YYYY-MM-DD) = 주차 폴더명.
 - Firestore 쿼리는 복합 인덱스가 필요 없게 `where` 하나만 쓰고 정렬은 클라이언트에서 한다. 인덱스 오류가 나면 콘솔 링크를 사용자에게 안내한다.
 

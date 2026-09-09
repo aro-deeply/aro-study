@@ -7,11 +7,14 @@
      총무가 분배 대상에 없으면 낸 사람이, 그도 없으면 첫 번째 대상이 나머지를 부담한다.
    - 차액 = 낸 금액 - 부담액. +는 받을 돈, -는 낼 돈.
    - 정산 완료(payments)는 보낸 사람의 차액을 올리고 받은 사람의 차액을 내린다. 남은 차액으로 "보낼 돈"을 만든다.
+   - 회비에서 쓴 지출(source: "fund")과 회비에서 보전한 송금(from: "fund")은 개인 정산에서 제외한다(fund.js).
+     이 파일의 계산은 "추가 비용(참석자 n분의 1)"에만 적용된다.
 */
 import {
   db, collection, doc, getDoc, getDocs, query, where,
   loadMembers, members, memberById, memberName, esc, fmtWon, fmtDiff, fmtDate, floor100
 } from "./app.js";
+import { isSplit, FUND_ID, computeFund, renderSessionFund } from "./fund.js";
 
 export const CATEGORIES = ["식사", "카페", "장소", "기타"];
 
@@ -23,6 +26,8 @@ export const CATEGORIES = ["식사", "카페", "장소", "기타"];
  * @param {object[]} p.members    { id, name, role, active, order }
  */
 export function computeSettlement({ expenses = [], payments = [], sessionsById = {}, members = [] }) {
+  expenses = expenses.filter(isSplit);
+  payments = payments.filter(p => p.from !== FUND_ID && p.to !== FUND_ID);
   const adminId = members.find(m => m.role === "admin")?.id || null;
   const known = new Set(members.map(m => m.id));
   const paid = {}, owed = {}, warnings = [];
@@ -111,7 +116,7 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
 export function renderSettlement(root, r, opt = {}) {
   const title = opt.title || "정산";
   if (!r.count) {
-    root.innerHTML = `<div class="empty">아직 등록된 지출이 없습니다.${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#expenses">관리 화면</a>에서 입력하면 여기 표시됩니다.' : ""}</div>`;
+    root.innerHTML = opt.emptyText === "" ? "" : `<div class="empty">${esc(opt.emptyText || "아직 등록된 지출이 없습니다.")}${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#expenses">관리 화면</a>에서 입력하면 여기 표시됩니다.' : ""}</div>`;
     return;
   }
   const rule = r.uniform && r.n
@@ -139,7 +144,7 @@ export function renderSettlement(root, r, opt = {}) {
   const transfers = r.transfers.length
     ? r.transfers.map(t => `<div class="tr"><span>${esc(memberName(t.from))}</span><span class="arrow">→</span><span>${esc(memberName(t.to))}</span><span class="amt">${fmtWon(t.amount)}원</span></div>`).join("")
     : `<div class="tr done"><span>남은 정산이 없습니다.</span></div>`;
-  const done = (opt.payments || []).map(p => `<div class="tr done"><span>${esc(memberName(p.from))}</span><span class="arrow">→</span><span>${esc(memberName(p.to))}</span><span class="amt">${fmtWon(p.amount)}원</span><span class="tag ok">완료 ${fmtDate(p.date, "short")}</span></div>`).join("");
+  const done = (opt.payments || []).filter(p => p.from !== FUND_ID && p.to !== FUND_ID).map(p => `<div class="tr done"><span>${esc(memberName(p.from))}</span><span class="arrow">→</span><span>${esc(memberName(p.to))}</span><span class="amt">${fmtWon(p.amount)}원</span><span class="tag ok">완료 ${fmtDate(p.date, "short")}</span></div>`).join("");
 
   const bad = !r.checks.itemsOk || !r.checks.owedOk || r.checks.dupes.length || r.warnings.length;
   const checkLine = bad
@@ -153,7 +158,7 @@ export function renderSettlement(root, r, opt = {}) {
 
   root.innerHTML = `
     <div class="st-head">
-      <div class="st-total"><div class="lab">총 지출</div><b>${fmtWon(r.total)}<small>원</small></b><span>${esc(opt.subtitle || "")}${opt.subtitle ? ", " : ""}항목 ${r.count}건</span></div>
+      <div class="st-total"><div class="lab">${esc(opt.totalLabel || "총 지출")}</div><b>${fmtWon(r.total)}<small>원</small></b><span>${esc(opt.subtitle || "")}${opt.subtitle ? ", " : ""}항목 ${r.count}건</span></div>
       <div class="st-rule"><div class="lab">정산 기준</div>${rule}</div>
     </div>
     <div class="st-people">${people}</div>
@@ -177,18 +182,45 @@ export async function fetchSessionData(sessionId) {
   return { session, expenses, payments };
 }
 
-/** 주차 페이지용: 세션 하나의 정산을 root에 렌더. 반환값으로 세션 문서도 돌려준다. */
+/** 회비 잔액 계산에 필요한 전체 자료(기수, 납부, 회비 지출, 회비 보전 송금). */
+export async function fetchFundData() {
+  const [tSnap, dSnap, eSnap, pSnap] = await Promise.all([
+    getDocs(collection(db, "terms")),
+    getDocs(collection(db, "dues")),
+    getDocs(query(collection(db, "expenses"), where("source", "==", "fund"))),
+    getDocs(query(collection(db, "payments"), where("from", "==", FUND_ID)))
+  ]);
+  const rows = s => s.docs.map(d => ({ id: d.id, ...d.data() }));
+  return { terms: rows(tSnap), dues: rows(dSnap), fundExpenses: rows(eSnap), fundPayments: rows(pSnap) };
+}
+
+/** 주차 페이지용: 세션 하나의 비용(회비 지출 + 추가 비용 정산)을 root에 렌더. 반환값으로 세션 문서도 돌려준다. */
 export async function mountSettlement(root, sessionId, opt = {}) {
-  root.innerHTML = '<div class="empty">정산 불러오는 중</div>';
+  root.innerHTML = '<div class="empty">비용 불러오는 중</div>';
   try {
     await loadMembers();
     const { session, expenses, payments } = await fetchSessionData(sessionId);
+    const fundItems = expenses.filter(x => !isSplit(x));
+    let f = null;
+    if (fundItems.length) {
+      try { const fd = await fetchFundData(); f = computeFund({ terms: fd.terms, dues: fd.dues, expenses: fd.fundExpenses, payments: fd.fundPayments, members: members() }); }
+      catch (ex) { console.error(ex); }
+    }
     const r = computeSettlement({ expenses, payments, sessionsById: { [sessionId]: session || {} }, members: members() });
-    renderSettlement(root, r, { ...opt, payments, subtitle: opt.subtitle ?? (session?.date ? fmtDate(session.date) : "") });
-    return { session, expenses, payments, result: r };
+    root.innerHTML = '<div id="settle-fund"></div><div id="settle-split"></div>';
+    renderSessionFund(root.querySelector("#settle-fund"), { items: fundItems, f, payments });
+    const splitRoot = root.querySelector("#settle-split");
+    if (fundItems.length) splitRoot.innerHTML = r.count ? '<div class="lab" style="margin-top:22px">추가 비용 (참석자 n분의 1)</div>' : "";
+    const sub = document.createElement("div"); splitRoot.appendChild(sub);
+    renderSettlement(sub, r, {
+      ...opt, payments, subtitle: opt.subtitle ?? (session?.date ? fmtDate(session.date) : ""),
+      totalLabel: fundItems.length ? "추가 비용" : "총 지출",
+      emptyText: fundItems.length ? "" : (opt.emptyText || "아직 등록된 지출이 없습니다.")
+    });
+    return { session, expenses, payments, result: r, fund: f };
   } catch (ex) {
     console.error(ex);
-    root.innerHTML = `<div class="note warn">정산을 불러오지 못했습니다: ${esc(ex.message || ex)}</div>`;
+    root.innerHTML = `<div class="note warn">비용을 불러오지 못했습니다: ${esc(ex.message || ex)}</div>`;
     return null;
   }
 }
