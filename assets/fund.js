@@ -130,7 +130,7 @@ export function renderFund(root, f, opt = {}) {
 
   const others = f.terms.filter(x => x !== t);
   const past = others.length
-    ? `<div class="lab" style="margin-top:16px">이전 회비 설정</div>${others.map(x => `<div class="rowi"><div class="main">${esc(x.name || "기수")}<small>${esc(termPeriod(x))} · 1인 ${fmtWon(x.fee)}원 · 납부 ${x.paidCount}/${x.rows.length}명</small></div><span class="amt">${fmtWon(x.collected)}</span></div>`).join("")}`
+    ? `<div class="lab" style="margin-top:16px">이전 회비 설정</div>${others.map(x => `<div class="rowi"><div class="main">${esc(x.name || "회비")}<small>${esc(termPeriod(x))} · 1인 ${fmtWon(x.fee)}원 · 납부 ${x.paidCount}/${x.rows.length}명</small></div><span class="amt">${fmtWon(x.collected)}</span></div>`).join("")}`
     : "";
 
   root.innerHTML = `${head}
