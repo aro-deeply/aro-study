@@ -26,6 +26,7 @@ with sync_playwright() as p:
             r = pg.evaluate("window.__r")
             r2 = pg.evaluate("window.__r2")
             f = pg.evaluate("window.__fund")
+            pg_sched = pg.evaluate("window.__sched")
         ctx.close()
     b.close()
 
@@ -48,17 +49,39 @@ check("checks ok", (r["checks"]["itemsOk"], r["checks"]["owedOk"], r["checks"]["
 check("categories (split only)", [(c["name"], c["amount"]) for c in r["categories"]], [("기타", 13700)])
 check("dup detected", r2["checks"]["dupes"], ["자료 인쇄"])
 
-# 회비(기금): 납부 4명 200,000 - 회비 지출 (96,500 + 32,000 + 24,000 + 42,000) = 5,500
+# 회비(기금): 납부 4명 200,000 - 회비 지출 (20,500 + 9,000 + 12,000 + 22,000) = 136,500
 check("fund income", f["income"], 200000)
-check("fund spent", f["spent"], 194500)
-check("fund balance", f["balance"], 5500)
+check("fund spent", f["spent"], 63500)
+check("fund balance", f["balance"], 136500)
 check("fund current term", f["current"]["name"], "2026 하반기 회비")
 check("fund paid/unpaid", (f["current"]["paidCount"], [u["id"] for u in f["current"]["unpaid"]]), (4, ["d"]))
 check("fund expected/collected", (f["current"]["expected"], f["current"]["collected"]), (250000, 200000))
-check("fund term spent (in period)", f["current"]["spent"], 194500)
+check("fund term spent (in period)", f["current"]["spent"], 63500)
+check("fund term end derived from months", f["current"]["endEff"], "2027-02-28")
 rb = {x["id"]: (x["paid"], x["done"], x["remaining"]) for x in f["reimburse"]}
-check("reimburse b (paid 32,000, reimbursed 32,000)", rb, {"b": (32000, 32000, 0)})
+check("reimburse b (paid 9,000, reimbursed 9,000)", rb, {"b": (9000, 9000, 0)})
 check("reimburse total pending", f["reimburseTotal"], 0)
+
+# 월별 가용 금액: 250,000 / 6개월. 9월 배정 41,667 - 지출 41,500 = 167 이월, 10월 41,666 + 167 - 22,000 = 19,833
+b = f["current"]["budget"]
+check("budget months/monthly/total", (b["months"], b["monthly"], b["total"]), (6, 41667, 250000))
+check("budget status/current", (b["status"], b["current"]["ym"]), ("during", "2026-10"))
+rows = {r["ym"]: (r["alloc"], r["carried"], r["spent"], r["remaining"]) for r in b["rows"]}
+check("budget 2026-09", rows["2026-09"], (41667, 0, 41500, 167))
+check("budget 2026-10", rows["2026-10"], (41666, 167, 22000, 19833))
+check("budget 2026-11 carry", rows["2026-11"][1], 19833)
+check("budget last month sums to total", sum(r["alloc"] for r in b["rows"]), 250000)
+check("budget last ym", b["rows"][-1]["ym"], "2027-02")
+
+# 일정과 발제: 매월 둘째 화요일, 순서 a b c d e (2026-09 시작). 오늘 2026-10-20 -> 다음은 11월 10일, 발제 c
+sch = pg_sched
+check("sched next date", sch["next"]["date"], "2026-11-10")
+check("sched next presenter (c = 3/5)", (sch["next"]["presenter"], sch["next"]["index"]), ("c", 3))
+by = {r["ym"]: r for r in sch["rows"]}
+check("sched oct uses session date/presenter", (by["2026-10"]["date"], by["2026-10"]["presenter"], by["2026-10"]["fromSession"], by["2026-10"]["status"]), ("2026-10-13", "b", True, "done"))
+check("sched rotation wraps (2027-02 -> a)", by["2027-02"]["presenter"], "a")
+check("sched 2027-01 2nd tuesday", by["2027-01"]["date"], "2027-01-12")
+check("sched dec 2nd tuesday", by["2026-12"]["date"], "2026-12-08")
 print("--- console ---")
 for l in logs: print(l[:300])
 print("RESULT:", "ALL PASS" if not fails else f"FAILED: {fails}")

@@ -21,7 +21,7 @@
 <div class="wrap">
   <div class="kicker"><span>HR STUDY</span><span>WEEK {{WEEK_NO}}</span></div>
   <h1>{{TITLE}}</h1>
-  <p class="sub meta-line">{{DATE_LABEL}} · 참석 <span id="attendees" class="muted">불러오는 중</span></p>
+  <p class="sub meta-line">{{DATE_LABEL}} · 참석 <span id="attendees" class="muted">불러오는 중</span><span id="presenter-wrap" class="hidden"> · 발제 <span id="presenter"></span></span></p>
 
   <h2><em>1</em>이날의 내용</h2>
   <div class="doc" id="content">
@@ -58,6 +58,7 @@
   const att = $("#attendees");
   if (s?.attendees?.length) { att.textContent = s.attendees.map(memberName).join(", ") + ` (${s.attendees.length}명)`; att.className = ""; }
   else att.textContent = s ? "미정" : "세션 정보 없음";
+  if (s?.presenter) { $("#presenter").textContent = memberName(s.presenter); $("#presenter-wrap").classList.remove("hidden"); }
   // 정적 계획이 비어 있으면 Firestore의 nextPlan을 보여 준다.
   const np = $("#next-plan p");
   if (np && !np.textContent.trim() && s?.nextPlan) np.textContent = s.nextPlan;

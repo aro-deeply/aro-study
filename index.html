@@ -22,14 +22,19 @@
   <h1>주차별 기록, 정산, 의견</h1>
   <p class="sub">모임마다 공유한 내용과 다음 계획을 남기고, 회비 납부와 잔액은 여기서 확인합니다. 이름과 금액은 로그인한 멤버에게만 보입니다.</p>
 
-  <div class="stats" id="stats">
-    <div class="stat"><b class="soft">…</b><span>회비 잔액</span></div>
-    <div class="stat"><b class="soft">…</b><span>미납</span></div>
+  <div class="stats four" id="stats">
     <div class="stat"><b class="soft">…</b><span>다음 모임</span></div>
+    <div class="stat"><b class="soft">…</b><span>발제</span></div>
+    <div class="stat"><b class="soft">…</b><span>회비 잔액</span></div>
+    <div class="stat"><b class="soft">…</b><span>이달 가용</span></div>
   </div>
 
+  <h2>일정과 발제 <span class="cnt" id="sched-sub"></span></h2>
+  <p class="secsub">정기 모임은 매월 정해진 요일에 하고, 발제는 정한 순서대로 매월 한 명씩 돌아갑니다.</p>
+  <div id="sched"><div class="empty">불러오는 중</div></div>
+
   <h2>회비 현황 <span class="cnt" id="fund-sub"></span></h2>
-  <p class="secsub">1인 회비를 걷어 총무가 보관하고, 모임 비용은 이 회비에서 씁니다. 잔액 = 납부 합계 - 회비 지출 합계.</p>
+  <p class="secsub">1인 회비를 걷어 총무가 보관하고, 모임 비용은 이 회비에서 씁니다. 회비 총액을 개월 수로 나눈 월별 가용 금액 안에서 쓰고, 덜 쓴 금액은 다음 달로 이월됩니다.</p>
   <div id="fund"><div class="empty">불러오는 중</div></div>
 
   <h2>주차 목록 <span class="cnt" id="week-count"></span></h2>
@@ -49,51 +54,66 @@
            collection, getDocs, query, orderBy } from "./assets/app.js";
   import { computeSettlement } from "./assets/settle.js";
   import { computeFund, renderFund } from "./assets/fund.js";
+  import { computeSchedule, renderSchedule, loadSettings, ruleLabel, fmtMonth } from "./assets/schedule.js";
 
   // ?demo=1 이면 로그인 없이 가명 예시 데이터로 화면만 보여 준다.
   const DEMO = new URLSearchParams(location.search).get("demo") === "1";
-  let me = "";
-  const statsEl = $("#stats"), weeksEl = $("#weeks"), cumEl = $("#cum"), fundEl = $("#fund");
+  let me = "", today = todayStr();
+  const statsEl = $("#stats"), weeksEl = $("#weeks"), cumEl = $("#cum"), fundEl = $("#fund"), schedEl = $("#sched");
   try {
-    let sessions, expenses, payments, comments, terms, dues;
+    let sessions, expenses, payments, comments, terms, dues, settings;
     if (DEMO) {
       // 예시 화면을 홈 화면에 추가하면 실제 사이트가 아니라 예시가 열리도록 별도 manifest를 쓴다.
       const mf = document.querySelector('link[rel="manifest"]'); if (mf) mf.href = "demo/manifest.json";
       const S = await import("./demo/sample.js");
-      setMembers(S.MEMBERS); me = "a";
-      sessions = S.SESSIONS; expenses = S.EXPENSES; payments = S.PAYMENTS; comments = S.COMMENTS; terms = S.TERMS; dues = S.DUES;
+      setMembers(S.MEMBERS); me = "a"; today = S.TODAY || today;
+      sessions = S.SESSIONS; expenses = S.EXPENSES; payments = S.PAYMENTS; comments = S.COMMENTS; terms = S.TERMS; dues = S.DUES; settings = S.SETTINGS;
       $(".sub").insertAdjacentHTML("afterend", '<div class="note">화면 예시입니다. 이름과 금액은 가명·예시이며 실제 데이터가 아닙니다.</div>');
     } else {
       ({ me } = await ready());
-      const [sSnap, eSnap, pSnap, cSnap, tSnap, dSnap] = await Promise.all([
+      const [sSnap, eSnap, pSnap, cSnap, tSnap, dSnap, st] = await Promise.all([
         getDocs(query(collection(db, "sessions"), orderBy("date", "desc"))),
         getDocs(collection(db, "expenses")),
         getDocs(collection(db, "payments")),
         getDocs(collection(db, "comments")),
         getDocs(collection(db, "terms")),
-        getDocs(collection(db, "dues"))
+        getDocs(collection(db, "dues")),
+        loadSettings()
       ]);
       const rows = s => s.docs.map(d => ({ id: d.id, ...d.data() }));
-      sessions = rows(sSnap); expenses = rows(eSnap); payments = rows(pSnap); terms = rows(tSnap); dues = rows(dSnap);
+      sessions = rows(sSnap); expenses = rows(eSnap); payments = rows(pSnap); terms = rows(tSnap); dues = rows(dSnap); settings = st;
       comments = cSnap.docs.map(d => d.data());
     }
     const commentCount = {};
     comments.forEach(c => { if (!c.deleted) commentCount[c.sessionId] = (commentCount[c.sessionId] || 0) + 1; });
     const sessionsById = Object.fromEntries(sessions.map(s => [s.id, s]));
-    const f = computeFund({ terms, dues, expenses, payments, members: members() });
+    const f = computeFund({ terms, dues, expenses, payments, members: members(), today });
     const r = computeSettlement({ expenses, payments, sessionsById, members: members() });
-    window.__fund = f; window.__r = r;
+    const sch = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 12 });
+    window.__fund = f; window.__r = r; window.__sched = sch;
 
     // 상단 요약
     const cur = f.current;
     const unpaid = cur ? cur.unpaid : [];
     const latest = sessions[0];
-    const next = latest?.nextPlan ? esc(latest.nextPlan).split("\n")[0] : "미정";
+    const nextPlan = latest?.nextPlan ? latest.nextPlan.split("\n")[0] : "";
     const won = '<small style="font-size:.875rem;font-weight:500">원</small>';
+    const nx = sch.next;
+    const b = cur?.budget, bc = b?.current;
+    const budgetStat = b
+      ? (b.status === "before" ? `<b>${fmtWon(b.monthly)}${won}</b><span>월 가용 (${esc(fmtMonth(b.startYm, "short"))}부터, ${b.months}개월)</span>`
+        : bc ? `<b${bc.remaining < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(bc.remaining)}${won}</b><span>이달 가용 (배정 ${fmtWon(bc.alloc)}${bc.carried ? ` + 이월 ${fmtWon(bc.carried)}` : ""}${bc.spent ? ` - 지출 ${fmtWon(bc.spent)}` : ""})</span>`
+        : `<b>-</b><span>회비 기간 종료</span>`)
+      : `<b>-</b><span>월별 가용 금액 (회비 설정에 개월 수를 넣으면 표시)</span>`;
     statsEl.innerHTML = `
-      <div class="stat"><b${f.balance < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(f.balance)}${won}</b><span>회비 잔액${cur ? ` (${esc(cur.name || "")} 납부 ${cur.paidCount}/${cur.rows.length}명)` : ""}</span></div>
-      <div class="stat"><b${unpaid.length ? ' style="color:var(--danger)"' : ""}>${cur ? unpaid.length + "명" : "-"}</b><span>${cur ? "미납" + (unpaid.length ? ": " + unpaid.map(p => esc(p.name)).join(", ") : " 없음") : "회비 설정 없음"}</span></div>
-      <div class="stat"><b style="font-size:1rem;line-height:1.4">${next}</b><span>다음 모임${latest ? " (" + fmtDate(latest.date, "short") + " 모임에서 정한 계획)" : ""}</span></div>`;
+      <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${esc(ruleLabel(sch.meeting))}${nextPlan ? "<br>" + esc(nextPlan) : ""}</span></div>
+      <div class="stat"><b>${nx?.presenter ? esc(memberName(nx.presenter)) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>
+      <div class="stat"><b${f.balance < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(f.balance)}${won}</b><span>회비 잔액${cur ? ` · 납부 ${cur.paidCount}/${cur.rows.length}명${unpaid.length ? `, 미납 ${unpaid.length}명` : ""}` : ""}</span></div>
+      <div class="stat">${budgetStat}</div>`;
+
+    // 일정과 발제
+    $("#sched-sub").textContent = esc(ruleLabel(sch.meeting));
+    renderSchedule(schedEl, sch, { me, adminHint: isAdmin() ? "admin.html" : "", nextPlan, weekHref: s => DEMO ? "demo/" : `weeks/${s.id}/` });
 
     // 회비 현황
     $("#fund-sub").textContent = cur ? `${cur.name || ""} ${fmtWon(f.balance)}원 남음`.trim() : "";
@@ -104,6 +124,7 @@
     weeksEl.innerHTML = sessions.length ? sessions.map((s, i) => {
       const no = String(sessions.length - i).padStart(2, "0");
       const facts = [`참석 <b>${(s.attendees || []).length}명</b>`];
+      if (s.presenter) facts.push(`발제 <b>${esc(memberName(s.presenter))}</b>`);
       const spent = expenses.filter(x => x.sessionId === s.id).reduce((a, x) => a + (Number(x.amount) || 0), 0);
       if (spent) facts.push(`지출 <b>${fmtWon(spent)}원</b>`);
       if (s.briefCount) facts.push(`브리프 <b>${s.briefCount}편</b>`);
@@ -136,7 +157,7 @@
     console.error(ex);
     const msg = /insufficient permissions/i.test(ex.message || "") ? "권한 오류입니다. 총무가 Firestore 규칙을 게시했는지 확인해 주세요." : esc(ex.message || ex);
     weeksEl.innerHTML = `<div class="note warn">불러오지 못했습니다: ${msg}</div>`;
-    cumEl.innerHTML = ""; statsEl.innerHTML = ""; fundEl.innerHTML = "";
+    cumEl.innerHTML = ""; statsEl.innerHTML = ""; fundEl.innerHTML = ""; schedEl.innerHTML = "";
   }
   document.addEventListener("aro:me", () => location.reload());
 </script>

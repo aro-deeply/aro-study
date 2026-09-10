@@ -59,8 +59,10 @@ aro-study/
 정적 HTML에 두는 것: 주차 제목, 날짜, 그날 다룬 주제와 공유 내용 요약, 관련 브리프 링크, 다음 모임 계획. 이름·금액·의견은 전부 Firestore.
 
 - `members/{memberId}`: `{ name, order, active, joinedAt }`
-- `sessions/{sessionId}`: sessionId는 `2026-09-XX` 형식. `{ date, title, attendees: [memberId], nextPlan, memo, createdAt }`. 주차 HTML의 메타를 미러링하되, 참석자는 여기만 둔다.
-- `terms/{termId}`: `{ name, start, end, fee, memberIds: [memberId] | null, note }`. 회비 설정: 1인 금액과 선택적 기간(start·end는 비어 있을 수 있음, 이름도 비우면 "회비"). 여러 개면 기간이 오늘을 포함하는 것, 없으면 가장 최근 것을 현재로 본다. `memberIds`가 null이면 활성 멤버 전원이 대상. (2026-09-09 추가)
+- `sessions/{sessionId}`: sessionId는 `2026-09-XX` 형식. `{ date, title, presenter: memberId | "", attendees: [memberId], nextPlan, memo, createdAt }`. 주차 HTML의 메타를 미러링하되, 참석자·발제자는 여기만 둔다. `presenter`가 있으면 발제 순서(`settings/rotation`)보다 우선. (presenter 2026-09-10 추가)
+- `settings/meeting`: `{ week: 1~5(5는 마지막), weekday: 0(일)~6(토), time, place }`. 정기 모임 규칙. 없으면 둘째 화요일. 다음 모임 날짜는 이 규칙으로 계산하고, 그 달에 세션이 있으면 세션 날짜를 쓴다. (2026-09-10 추가)
+- `settings/rotation`: `{ order: [memberId...], startMonth: "YYYY-MM" }`. 발제 순서. startMonth의 발제자가 order[0], 매월 한 칸씩, 끝나면 처음으로. (2026-09-10 추가)
+- `terms/{termId}`: `{ name, start, end, fee, months, account, memberIds: [memberId] | null, note }`. 회비 설정: 1인 금액과 선택적 기간(start·end는 비어 있을 수 있음, 이름도 비우면 "회비"). 여러 개면 기간이 오늘을 포함하는 것, 없으면 가장 최근 것을 현재로 본다. `memberIds`가 null이면 활성 멤버 전원이 대상. (2026-09-09 추가) `months`(사용 개월 수)와 `start`가 있으면 월별 가용 금액을 계산한다: 총액(1인 회비 x 대상 인원)을 months로 나눠 매월 배정하고 덜 쓴 만큼 다음 달로 이월. `end`가 비어 있으면 마지막 달 말일로 본다. `account`는 입금 계좌 표시용. (2026-09-10 추가)
 - `dues/{dueId}`: `{ termId, memberId, amount, date, note, createdAt }`. 회비 납부 기록. 한 사람이 여러 번 나눠 낼 수 있다.
 - `expenses/{expenseId}`: `{ sessionId, date, item, amount, category, source: "fund" | "split", paidBy: memberId, splitAmong: [memberId] | "attendees", note, createdAt, createdBy }`. `source`가 `"fund"`(기본)면 회비에서 쓴 지출이라 개인 정산에 잡히지 않고 잔액만 줄어든다. `"split"`이면 추가 비용으로 `splitAmong`(`"attendees"`면 세션 참석자 전원)에게 균등 분배. `source`가 없는 옛 문서는 `"split"`으로 본다.
 - `payments/{paymentId}`: `{ sessionId, from: memberId | "fund", to: memberId, amount, date, note }`. 송금 기록. `from`이 `"fund"`면 총무가 아닌 사람이 대신 결제한 회비 지출을 회비에서 보전한 것이고, 그 외는 추가 비용 정산 완료 기록.
@@ -75,6 +77,13 @@ aro-study/
 - 총무가 아닌 사람이 회비 지출을 대신 결제하면 "회비에서 보전할 돈"으로 표시하고, 총무가 보낸 뒤 `payments`에 `from: "fund"`로 기록하면 사라진다.
 - 회비 밖 추가 비용만 참석자 n분의 1(기존 정산 규칙: 100원 단위 내림, 뒷자리 총무 부담). 추가 비용이 없으면 개인 정산 표는 표시하지 않는다.
 - 회비 금액·기간·대상은 `terms`에서 바꿀 수 있고, 남는 돈의 이월·환급은 미정(회비 설정 메모에 적는다).
+
+### 3-2. 일정·발제·월별 가용 금액 (2026-09-10 추가)
+
+- 정기 모임: 매월 둘째 화요일(`settings/meeting`으로 변경 가능). 목록 상단에 다음 모임 날짜와 그 달 발제자를 보여 주고, "일정과 발제" 섹션에 앞으로 12개월 표를 둔다.
+- 발제: `settings/rotation`의 순서대로 매월 한 명. 세션의 `presenter`가 있으면 그것이 확정값. admin 세션 폼은 날짜에 맞는 순서상 발제자를 기본값으로 넣는다.
+- 월별 가용 금액: 회비 총액을 개월 수로 나눠 배정하고 이월한다. k번째 달까지 누적 배정 = round(총액 x k / months). 이달 가용 = 누적 배정 - 누적 지출(이월 포함). 계산은 계획 총액 기준이라 미납이 있으면 실제 현금은 그보다 적을 수 있다(잔액 카드가 실제 현금).
+- 첫 모임(OT, 2026-09-09) 비용은 회비 밖 참석자 n분의 1(`source: "split"`)로 처리한다.
 
 ## 4. 화면 요구사항
 
@@ -102,7 +111,7 @@ aro-study/
 
 ### 4-4. admin.html (총무용)
 - 같은 로그인이지만 이름이 `총무` 권한(`members`에 `role: "admin"`)인 경우만 진입. 서버 검증은 하지 않는다(리스크 낮음, 사용자 판단).
-- 탭 5개: 멤버(추가·비활성화), 회비(회비 설정 만들기·수정·삭제, 멤버별 납부 현황과 "납부 처리"·취소, 납부 기록 직접 입력), 세션(만들기/수정/삭제, 삭제 시 지출·송금 기록 함께 삭제), 지출(항목, 금액, 날짜, 카테고리, 재원: 회비에서 / 참석자 n분의 1, 낸 사람, 분배 대상), 송금 기록(회비 보전 또는 추가 비용 정산 완료).
+- 탭 6개: 멤버(추가·비활성화), 일정·발제(정기 모임 규칙, 발제 순서 편집과 12개월 미리보기), 회비(회비 설정 만들기·수정·삭제: 1인 금액·시작일·사용 개월 수·입금 계좌, 멤버별 납부 현황과 "납부 처리"·취소, 납부 기록 직접 입력), 세션(만들기/수정/삭제, 발제자 선택, 삭제 시 지출·송금 기록 함께 삭제), 지출(항목, 금액, 날짜, 카테고리, 재원: 회비에서 / 참석자 n분의 1, 낸 사람, 분배 대상), 송금 기록(회비 보전 또는 추가 비용 정산 완료).
 - 지출 입력은 핸드폰에서 영수증 보고 바로 넣을 수 있게 큰 입력칸, 금액은 숫자 키패드(`inputmode="numeric"`).
 
 ## 5. 구현 단계 (이 순서로, 단계마다 확인)

@@ -21,13 +21,14 @@ GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 
 
 ## 화면
 
-- `index.html`: 회비 잔액·미납·다음 모임 요약, 회비 현황(회비 설정, 멤버별 납부 표, 보전할 돈), 주차 목록(최신순), 추가 비용 정산(있을 때만).
+- `index.html`: 다음 모임·발제자·회비 잔액·이달 가용 요약, 일정과 발제(12개월 표, 발제 순서), 회비 현황(회비 설정, 월별 가용 금액, 멤버별 납부 표, 보전할 돈), 주차 목록(최신순), 추가 비용 정산(있을 때만).
 - `weeks/<날짜>/`: 이날의 내용, 다음 모임 계획, 비용(이 회차 회비 지출과 현재 잔액, 추가 비용이 있으면 n분의 1 정산서), 의견(답글 1단계), 본문 하이라이트·메모(내 것만/전체, AI용 복사).
 - `admin.html`: 총무 권한 이름으로 들어왔을 때만 열린다.
 
 ## 회비와 정산 규칙
 
-- 기본: 1인 회비를 걷어 총무가 보관하고, 모임 비용은 회비에서 쓴다. 잔액 = 납부 합계 - 회비 지출 합계. 회비 금액·기간·대상은 admin 회비 탭에서 바꿀 수 있다.
+- 정기 모임은 매월 둘째 화요일(admin 일정·발제 탭에서 변경), 발제는 정한 순서대로 매월 한 명(세션에 따로 정하면 그것이 우선).
+- 기본: 1인 회비를 걷어 총무가 보관하고, 모임 비용은 회비에서 쓴다. 잔액 = 납부 합계 - 회비 지출 합계. 회비 총액을 사용 개월 수로 나눈 월별 가용 금액을 표시하고 덜 쓴 금액은 이월한다. 회비 금액·기간·개월 수·계좌·대상은 admin 회비 탭에서 바꿀 수 있다.
 - 총무가 아닌 사람이 회비 지출을 대신 결제하면 "회비에서 보전할 돈"에 뜨고, 총무가 보낸 뒤 송금 기록(보낸 사람 "회비")을 남기면 사라진다.
 - 추가 비용(재원 "참석자 n분의 1")만 개인 정산: 분배 대상에게 균등, 1인 부담은 100원 단위 내림, 뒷자리는 총무 부담. 차액은 낸 금액에서 부담액을 뺀 값이며 +는 받을 돈, -는 낼 돈. 송금 기록은 남은 차액에 반영된다. 검산(소계 합, 부담액 합, 중복)은 화면에서 실제로 수행한다.
 
@@ -35,10 +36,10 @@ GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 
 
 ```
 index.html  admin.html  manifest.json  firestore.rules  SPEC.md  CLAUDE.md
-assets/   style.css  app.js  fund.js  settle.js  reader.js  firebase-config.js  icons/
+assets/   style.css  app.js  schedule.js  fund.js  settle.js  reader.js  firebase-config.js  icons/
 weeks/    YYYY-MM-DD/index.html
 templates/week.html   demo/index.html
-scripts/  new_week.py  check_week.py  session.mjs  tests/
+scripts/  new_week.py  check_week.py  session.mjs  setup.mjs  lib/firestore.mjs  tests/
 .claude/skills/aro-study-week/SKILL.md
 ```
 

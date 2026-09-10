@@ -114,7 +114,11 @@ td.amt,th.amt{text-align:right;white-space:nowrap}
 .stat{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px 10px;background:var(--surface)}
 .stat b{display:block;font-size:1.375rem;letter-spacing:-.02em;color:var(--accent-dark);font-weight:700;line-height:1.15;margin-bottom:4px;font-variant-numeric:tabular-nums}
 .stat span{font-size:.75rem;color:var(--muted);display:block;line-height:1.5}
-@media (max-width:560px){.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:1/-1}}
+.stats.four{grid-template-columns:repeat(4,1fr)}
+@media (max-width:560px){.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:1/-1}.stats.four .stat:last-child{grid-column:auto}}
+@media (max-width:760px){.stats.four{grid-template-columns:1fr 1fr}}
+table.budget tr[data-over] td:last-child,table.budget tr[data-over] td:last-child b{color:var(--danger)}
+table.sched tr[data-me] td:first-child{color:var(--accent-dark)}
 
 /* ---------- 6. 버튼과 폼 ---------- */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 18px;font-size:.9375rem;font-weight:600;color:var(--bg);background:var(--ink);border:1px solid var(--ink);border-radius:var(--radius);cursor:pointer;transition:all .15s ease-out;white-space:nowrap}
@@ -135,7 +139,7 @@ td.amt,th.amt{text-align:right;white-space:nowrap}
 .field{margin-bottom:14px}
 .field label{display:block;font-size:.8125rem;font-weight:700;color:var(--ink-80);margin-bottom:5px;letter-spacing:.02em}
 .field .help{font-size:.75rem;color:var(--muted-soft);margin-top:4px}
-input[type=text],input[type=password],input[type=number],input[type=date],input[type=email],select,textarea{
+input[type=text],input[type=password],input[type=number],input[type=date],input[type=month],input[type=email],select,textarea{
   width:100%;min-height:48px;padding:10px 14px;font-size:1rem;background:var(--surface);color:var(--ink);
   border:1px solid var(--line);border-radius:var(--radius);outline:none;transition:border-color .15s ease-out;-webkit-appearance:none;appearance:none}
 select{background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 21px,calc(100% - 14px) 21px;background-size:6px 6px;background-repeat:no-repeat;padding-right:40px}
