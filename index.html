@@ -25,14 +25,11 @@
 <div id="topbar"></div>
 <div class="wrap">
   <div class="kicker"><span>HR STUDY</span><span>HOME</span></div>
-  <h1>HR 스터디</h1>
   <div id="note"></div>
 
-  <div class="stats four" id="stats">
+  <div class="stats two" id="stats">
     <div class="stat"><b class="soft">…</b><span>다음 모임</span></div>
     <div class="stat"><b class="soft">…</b><span>발제</span></div>
-    <div class="stat"><b class="soft">…</b><span>회비 잔액</span></div>
-    <div class="stat"><b class="soft">…</b><span>이달 가용</span></div>
   </div>
 
   <div class="tabs" id="tabs">
@@ -196,18 +193,9 @@
     const latest = sessions[0];
     const nextPlan = latest?.nextPlan ? latest.nextPlan.split("\n")[0] : "";
     const nx = sch.next;
-    const b = cur?.budget, bc = b?.current;
-    const budgetStat = b
-      ? (b.status === "before" ? `<b>${fmtWon(b.monthly)}${won}</b><span>월 가용 (${esc(fmtMonth(b.startYm, "short"))}부터, ${b.months}개월)</span>`
-        : bc ? `<b${bc.remaining < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(bc.remaining)}${won}</b><span>이달 가용 (배정 ${fmtWon(bc.alloc)}${bc.carried ? ` + 이월 ${fmtWon(bc.carried)}` : ""}${bc.spent ? ` - 지출 ${fmtWon(bc.spent)}` : ""})</span>`
-        : `<b>-</b><span>회비 기간 종료</span>`)
-      : `<b>-</b><span>월별 가용 금액 (회비 설정에 개월 수를 넣으면 표시)</span>`;
-    const whenNext = nx?.session ? "확정" + [nx.session.time || sch.meeting.time, nx.session.place || sch.meeting.place].filter(Boolean).map(v => " · " + esc(v)).join("") : esc(ruleLabel(sch.meeting));
     statsEl.innerHTML = `
       <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${whenNext}${nextPlan && !nx?.session ? "<br>" + esc(nextPlan) : ""}</span></div>
-      <div class="stat"><b>${nx?.presenter ? esc(honor(memberName(nx.presenter))) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>
-      <div class="stat"><b${f.balance < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(f.balance)}${won}</b><span>회비 잔액${cur ? ` · 납부 ${cur.paidCount}/${cur.rows.length}명` : ""}</span></div>
-      <div class="stat">${budgetStat}</div>`;
+      <div class="stat"><b>${nx?.presenter ? esc(honor(memberName(nx.presenter))) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>`;
 
     // 다음 모임 카드(일정 탭의 머리 부분만)
     const tmp = document.createElement("div");

@@ -115,6 +115,8 @@ td.amt,th.amt{text-align:right;white-space:nowrap}
 .stat b{display:block;font-size:1.375rem;letter-spacing:-.02em;color:var(--accent-dark);font-weight:700;line-height:1.15;margin-bottom:4px;font-variant-numeric:tabular-nums}
 .stat span{font-size:.75rem;color:var(--muted);display:block;line-height:1.5}
 .stats.four{grid-template-columns:repeat(4,1fr)}
+.stats.two{grid-template-columns:1fr 1fr;margin-top:22px}
+@media (max-width:560px){.stats.two{grid-template-columns:1fr}.stats.two .stat:last-child{grid-column:auto}}
 @media (max-width:560px){.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:1/-1}.stats.four .stat:last-child{grid-column:auto}}
 @media (max-width:760px){.stats.four{grid-template-columns:1fr 1fr}}
 table.budget tr[data-over] td:last-child,table.budget tr[data-over] td:last-child b{color:var(--danger)}
