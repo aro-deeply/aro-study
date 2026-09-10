@@ -67,15 +67,13 @@
 
   <!-- 회비 -->
   <section data-tab="fund">
-    <h2 class="tabh">회비 현황 <span class="cnt" id="fund-sub"></span></h2>
+    <h2 class="tabh">회비 현황</h2>
     <p class="secsub">월별 예산 안에서 사용. 잔액은 다음 달로 이월.</p>
     <div id="fund"><div class="empty">불러오는 중</div></div>
   </section>
 
   <!-- 일정·발제 -->
   <section data-tab="schedule">
-    <h2 class="tabh">일정과 발제 <span class="cnt" id="sched-sub"></span></h2>
-    <p class="secsub">발제는 순서대로 매월 1명. 일정 변경은 참석자 간 협의.</p>
     <div id="sched"><div class="empty">불러오는 중</div></div>
   </section>
 
@@ -171,16 +169,16 @@
     const head = `
       <div class="st-head">
         <div class="st-total"><div class="lab">${esc(fmtMonth(m))} 모임</div><b>${fmtDate(row.date, "short")}</b>
-          <span>${s ? "확정 일정" : esc(ruleLabel(sch.meeting, false))}${when ? " · " + esc(when) : ""}</span></div>
+          <span>${s ? esc(when) : esc(ruleLabel(sch.meeting, false)) + (when ? " · " + esc(when) : "")}</span></div>
         <div class="st-rule"><div class="lab">발제 ${status}</div>
-          <div class="eq">${row.presenter ? esc(honor(memberName(row.presenter))) : "미정"}${row.fromSession ? ' <span class="tag">확정</span>' : ""}</div>
+          <div class="eq">${row.presenter ? esc(honor(memberName(row.presenter))) : "미정"}</div>
           ${s ? `${esc(s.title || "제목 미정")}${s.page ? ` · <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}">기록 보기</a>` : ""}<br>참석 ${(s.attendees || []).length}명 · 의견 ${commentCount[s.id] || 0}개` : "등록된 모임 없음"}</div>
       </div>`;
 
     // 회비: 이달 배정·이월·지출·남은 금액
     const b = f.current?.budget, br = b?.rows.find(x => x.ym === m);
     const fundBox = br
-      ? `<div class="lab" style="margin-top:18px">회비 (${esc(f.current.name || "회비")})</div>
+      ? `<div class="lab" style="margin-top:18px">${esc(f.current.name || "회비")}</div>
          <div class="stats mini"><div class="stat"><b>${fmtWon(br.alloc)}${won}</b><span>배정</span></div><div class="stat"><b>${fmtWon(br.carried)}${won}</b><span>이월</span></div><div class="stat"><b>${fmtWon(br.spent)}${won}</b><span>회비 지출</span></div><div class="stat"><b${br.remaining < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(br.remaining)}${won}</b><span>남은 금액</span></div></div>`
       : `<div class="lab" style="margin-top:18px">회비</div><div class="secsub">${b ? `회비 사용 기간 아님 (${esc(fmtMonth(b.startYm))} ~ ${esc(fmtMonth(b.endYm))})` : "회비 설정 없음."}</div>`;
     const mDues = dues.filter(d => ym(d.date) === m).sort((a, b2) => (a.date || "").localeCompare(b2.date || ""));
@@ -277,9 +275,7 @@
     if (!DEMO && nt?.text && (!nt.until || today <= nt.until)) $("#note").innerHTML = `<div class="note" style="white-space:pre-line">${esc(nt.text)}</div>`;
 
     renderSummary();
-    $("#sched-sub").textContent = "";
     renderSchedule($("#sched"), sch, { me, adminHint: isAdmin() ? "admin.html" : "", weekHref: s => DEMO ? "demo/" : `weeks/${s.id}/` });
-    $("#fund-sub").textContent = f.current ? `${f.current.name || ""} ${fmtWon(f.balance)}원 남음`.trim() : "";
     renderFund($("#fund"), f, { me, adminHint: isAdmin() ? "admin.html" : "" });
     buildMonthList();
 

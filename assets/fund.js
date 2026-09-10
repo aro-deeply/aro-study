@@ -193,10 +193,6 @@ export function renderFund(root, f, opt = {}) {
       <td data-label="상태">${statusTag(r)}</td>
       <td class="amt" data-label="납부액">${r.paid ? fmtWon(r.paid) : '<span class="soft">-</span>'}${r.status === "partial" ? `<small class="soft"> / ${fmtWon(r.fee)}</small>` : ""}</td>
       <td data-label="납부일">${r.date ? fmtDate(r.date, "short") : '<span class="soft">-</span>'}</td></tr>`).join("") : "";
-  const unpaidLine = t && t.unpaid.length
-    ? `<div class="note warn" style="margin-top:6px">미납 ${t.unpaid.length}명: ${t.unpaid.map(r => esc(r.name) + (r.status === "partial" ? ` (${fmtWon(r.fee - r.paid)}원 남음)` : "")).join(", ")}</div>`
-    : (t ? '<div class="note ok" style="margin-top:6px">전원 납부 완료</div>' : "");
-
   const pend = f.reimburse.filter(r => r.remaining > 0);
   const reimb = pend.length
     ? `<div class="lab" style="margin-top:16px">회비에서 보전할 돈</div><div class="st-transfers">${pend.map(r => `<div class="tr"><span>${fundLabel}</span><span class="arrow">→</span><span>${esc(r.name)}</span><span class="amt">${fmtWon(r.remaining)}원</span></div>`).join("")}</div>
@@ -210,7 +206,7 @@ export function renderFund(root, f, opt = {}) {
 
   root.innerHTML = `${head}
     ${t ? renderBudget(t.budget) : ""}
-    ${t ? `<div class="lab" style="margin-top:16px">멤버별 납부</div><table class="stack dues"><thead><tr><th>멤버</th><th>상태</th><th class="amt">납부액</th><th>납부일</th></tr></thead><tbody>${rows}</tbody></table>${unpaidLine}` : ""}
+    ${t ? `<div class="lab" style="margin-top:16px">멤버별 납부</div><table class="stack dues"><thead><tr><th>멤버</th><th>상태</th><th class="amt">납부액</th><th>납부일</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
     ${reimb}${past}`;
   bindCopy(root);
 }
