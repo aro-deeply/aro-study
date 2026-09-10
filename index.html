@@ -28,11 +28,18 @@
   .mini .stat b{font-size:1.125rem}
   @media (max-width:560px){.mini{grid-template-columns:1fr 1fr}.mini .stat:last-child{grid-column:auto}}
   h2.tabh{margin-top:26px}
+  /* 데이터가 오기 전에는 빈 카드·탭 대신 안내 한 줄만 보인다 */
+  body.loading #stats,body.loading #tabs,body.loading section[data-tab]{display:none}
+  #loading{display:none;padding:56px 0 40px;text-align:center;color:var(--muted-soft);font-size:.875rem;line-height:1.8}
+  body.loading #loading{display:block}
+  #loading .slow{display:none;font-size:.8125rem}
+  #loading.slow .slow{display:block}
 </style>
-</head><body>
+</head><body class="loading">
 <div id="topbar"></div>
 <div class="wrap">
   <div id="note"></div>
+  <div id="loading">불러오는 중<span class="slow">연결이 느립니다 · 잠시 기다리거나 새로고침</span></div>
 
   <div class="stats two" id="stats">
     <div class="stat"><b class="soft">…</b><span>다음 모임</span></div>
@@ -231,6 +238,7 @@
   }
 
   /* ---------- 시작 ---------- */
+  const slowTimer = setTimeout(() => $("#loading").classList.add("slow"), 8000);
   try {
     if (DEMO) {
       // 예시 화면을 홈 화면에 추가하면 실제 사이트가 아니라 예시가 열리도록 별도 manifest를 쓴다.
@@ -278,6 +286,9 @@
     const msg = /insufficient permissions/i.test(ex.message || "") ? "권한 오류. 총무가 Firestore 규칙을 게시했는지 확인 필요." : esc(ex.message || ex);
     $("#note").innerHTML = `<div class="note warn">불러오기 실패: ${msg}</div>`;
     statsEl.innerHTML = "";
+  } finally {
+    clearTimeout(slowTimer);
+    document.body.classList.remove("loading");
   }
   document.addEventListener("aro:me", () => location.reload());
 </script>
