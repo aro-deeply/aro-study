@@ -2,7 +2,7 @@
 
    Firestore:
    - settings/meeting:  { week: 1~5(5는 마지막), weekday: 0(일)~6(토), time, place, note }   정기 모임 규칙. 없으면 DEFAULT_MEETING(둘째 수요일).
-   - settings/rotation: { order: [memberId...], startMonth: "YYYY-MM", note }               발제 순서. startMonth의 발제자가 order[0], 이후 매월 한 칸씩, 끝나면 처음으로.
+   - settings/rotation: { order: [memberId...], startMonth: "YYYY-MM", note }               발제 순서. startMonth의 발제자가 order[0], 이후 매월 한 칸씩. 끝난 뒤는 미정(반복하지 않음).
    - sessions/{id}.presenter: memberId                                                    그 회차의 실제 발제자(있으면 순서보다 우선).
 
    달 표기는 "YYYY-MM" 문자열로 통일한다.
@@ -61,13 +61,17 @@ export function normalizeRotation(r) {
   const order = Array.isArray(r?.order) ? r.order.filter((id, i, a) => id && a.indexOf(id) === i) : [];
   return { order, startMonth: isYm(r?.startMonth) ? r.startMonth : "", note: r?.note || "" };
 }
-/** 순서만으로 정한 그 달의 발제자 id. 순서가 없으면 null. */
+/** 순서만으로 정한 그 달의 발제자 id. 순서가 없거나 시작 전·끝난 뒤면 null. */
 export function presenterFor(s, rotation) {
   const r = normalizeRotation(rotation);
   if (!r.order.length || !r.startMonth || !isYm(s)) return null;
-  const n = r.order.length;
-  const k = (((monthIndex(s) - monthIndex(r.startMonth)) % n) + n) % n;
-  return r.order[k];
+  const k = monthIndex(s) - monthIndex(r.startMonth);
+  return k >= 0 && k < r.order.length ? r.order[k] : null;
+}
+/** 순서의 마지막 달 "YYYY-MM". 순서가 없으면 "". */
+export function rotationEnd(rotation) {
+  const r = normalizeRotation(rotation);
+  return r.order.length && r.startMonth ? addMonths(r.startMonth, r.order.length - 1) : "";
 }
 
 /**
@@ -75,8 +79,10 @@ export function presenterFor(s, rotation) {
  * @returns {{ rows, next, meeting, rotation }}
  *   rows[i] = { ym, date, presenter, fromSession, session, status: "done"|"next"|"planned", index: 순서상 위치(1부터) | 0 }
  */
-export function computeSchedule({ meeting, rotation, sessions = [], today = todayStr(), months = 12, from = "" } = {}) {
+export function computeSchedule({ meeting, rotation, sessions = [], today = todayStr(), months = 12, from = "", untilEnd = false } = {}) {
   const m = normalizeMeeting(meeting), r = normalizeRotation(rotation);
+  // untilEnd: 발제 순서가 끝나는 달까지만(최소 3개월)
+  if (untilEnd && rotationEnd(r)) months = Math.max(3, monthIndex(rotationEnd(r)) - monthIndex(isYm(from) ? from : ym(today)) + 1);
   const byMonth = {};
   for (const s of sessions) { const k = ym(s.date || s.id); if (!k) continue; if (!byMonth[k] || (s.date || "") > (byMonth[k].date || "")) byMonth[k] = s; }
   const start = isYm(from) ? from : ym(today);
@@ -130,11 +136,7 @@ export function renderSchedule(root, sch, opt = {}) {
       <td data-label="모임일">${fmtDate(x.date, "short")}</td>
       <td data-label="발제">${x.presenter ? esc(honor(memberName(x.presenter))) : '<span class="soft">미정</span>'}${x.fromSession ? ' <span class="tag">확정</span>' : ""}</td>
       <td data-label="상태">${statusTag(x.status)}${x.session?.page ? ` <a href="${esc(opt.weekHref ? opt.weekHref(x.session) : "weeks/" + x.session.id + "/")}">기록</a>` : ""}</td></tr>`).join("")}</tbody></table>`;
-  const cycle = r.order.length
-    ? `<div class="lab" style="margin-top:14px">발제 순서 (${r.order.length}명 순환)</div><div class="chips">${r.order.map((id, i) => `<span class="chip${id === next?.presenter ? "" : " dim"}">${i + 1}. ${esc(honor(memberName(id)))}</span>`).join("")}</div>
-       <div class="secsub" style="margin-top:8px">한 바퀴 뒤 처음부터. 특정 달의 변경은 해당 세션에서.</div>`
-    : "";
-  root.innerHTML = head + table + cycle;
+  root.innerHTML = head + table;
 }
 
 /** 주차 페이지 메타 줄에 쓸 발제자 이름. */
