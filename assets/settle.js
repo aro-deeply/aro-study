@@ -139,8 +139,15 @@ export function renderSettlement(root, r, opt = {}) {
     <div class="st-person${p.isAdmin ? " is-admin" : ""}">
       <div class="nm">${esc(p.name)}${p.isAdmin ? ' <span class="tag">총무 · 회비 보관</span>' : ""}</div>
       <b>${fmtWon(p.owed)}원</b>
-      <span>낸 돈 ${fmtWon(p.paid)} · <em class="diff ${p.diff > 0 ? "plus" : p.diff < 0 ? "minus" : ""}">${fmtDiff(p.diff)}</em>${p.fundSurplus ? ` · ${fundLabel} 귀속 +${fmtWon(p.fundSurplus)}` : ""}</span>
+      <span>낸 돈 ${fmtWon(p.paid)} · <em class="diff ${p.diff > 0 ? "plus" : p.diff < 0 ? "minus" : ""}">${fmtDiff(p.diff)}</em></span>
     </div>`).join("");
+  // 올림으로 더 걷히는 금액: 총무 부담이 아니라 총무가 받아서 회비로 보관하는 돈
+  const surplusCard = r.surplus ? `
+    <div class="st-person" style="border-style:dashed">
+      <div class="nm">${fundLabel} 귀속</div>
+      <b>${fmtWon(r.surplus)}원</b>
+      <span>1인 ${fmtWon(r.share || 0)}원 x ${r.n || "n"}명 - 총액 ${fmtWon(r.total)}${r.adminId ? ` · 총무가 받아 ${fundLabel}로 보관` : ""}</span>
+    </div>` : "";
 
   const catTotal = r.categories.reduce((s, c) => s + c.amount, 0) || 1;
   const catIdx = c => CATEGORIES.indexOf(c.name) + 1 || 4;
@@ -173,12 +180,12 @@ export function renderSettlement(root, r, opt = {}) {
       <div class="st-total"><div class="lab">${esc(opt.totalLabel || "총 지출")}</div><b>${fmtWon(r.total)}<small>원</small></b><span>${esc(opt.subtitle || "")}${opt.subtitle ? ", " : ""}항목 ${r.count}건</span></div>
       <div class="st-rule"><div class="lab">정산 기준</div>${rule}</div>
     </div>
-    <div class="st-people">${people}</div>
+    <div class="st-people">${people}${surplusCard}</div>
     ${r.categories.length ? `<div class="lab">카테고리</div><div class="st-catbar">${bar}</div><div class="st-cats">${cats}</div>` : ""}
     <div class="lab">상세 내역</div>${days}
     <div class="lab" style="margin-top:18px">보낼 돈</div>
     <div class="st-transfers">${transfers}${done}</div>
-    ${r.surplus && r.adminId ? `<div class="secsub">올림으로 더 걷히는 ${fmtWon(r.surplus)}원은 총무가 받는 금액에 포함돼 회비로 들어갑니다.</div>` : ""}
+    ${r.surplus && r.adminId ? `<div class="secsub">올림으로 더 걷히는 ${fmtWon(r.surplus)}원은 위 "보낼 돈"에 포함돼 총무에게 모이고, 총무 개인 몫이 아니라 ${fundLabel} 잔액으로 잡힙니다. 총무 부담액은 다른 멤버와 같습니다.</div>` : ""}
     <div class="st-check${bad ? " bad" : ""}">${checkLine}</div>`;
 }
 
