@@ -21,7 +21,12 @@
 <div class="wrap">
   <div class="kicker"><span>HR STUDY</span><span>WEEK {{WEEK_NO}}</span></div>
   <h1>{{TITLE}}</h1>
-  <p class="sub meta-line">{{DATE_LABEL}} · 참석 <span id="attendees" class="muted">불러오는 중</span><span id="presenter-wrap" class="hidden"> · 발제 <span id="presenter"></span></span></p>
+  <div class="meta-block">
+    <div class="meta-date">{{DATE_LABEL}}</div>
+    <div class="meta-row"><span class="k">발제</span><span id="presenter" class="soft">미정</span></div>
+    <div class="meta-row"><span class="k">참석</span><span id="att-count" class="soft">불러오는 중</span></div>
+    <div class="meta-names" id="attendees"></div>
+  </div>
 
   <h2><em>1</em>이날의 내용</h2>
   <div class="doc" id="content">
@@ -55,10 +60,10 @@
   mountReader({ sessionId, me, root: $("#content") });
   const data = await mountSettlement($("#settle"), sessionId, { adminHint: "../../admin.html" });
   const s = data?.session;
-  const att = $("#attendees");
-  if (s?.attendees?.length) { att.textContent = s.attendees.map(memberName).join(", ") + ` (${s.attendees.length}명)`; att.className = ""; }
-  else att.textContent = s ? "미정" : "세션 정보 없음";
-  if (s?.presenter) { $("#presenter").textContent = honor(memberName(s.presenter)); $("#presenter-wrap").classList.remove("hidden"); }
+  const cnt = $("#att-count"), names = $("#attendees");
+  if (s?.attendees?.length) { cnt.textContent = `${s.attendees.length}명`; cnt.className = ""; names.textContent = s.attendees.map(memberName).join(" · "); }
+  else cnt.textContent = s ? "미정" : "세션 정보 없음";
+  if (s?.presenter) { $("#presenter").textContent = honor(memberName(s.presenter)); $("#presenter").className = ""; }
   // 정적 계획이 비어 있으면 Firestore의 nextPlan을 보여 준다.
   const np = $("#next-plan p");
   if (np && !np.textContent.trim() && s?.nextPlan) np.textContent = s.nextPlan;

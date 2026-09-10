@@ -160,11 +160,6 @@ export function renderSettlement(root, r, opt = {}) {
       ${d.items.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${esc(x.category || "")}${x.note ? " · " + esc(x.note) : ""}</small></span><span class="by">${esc(memberName(x.paidBy))}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("")}
     </div>`).join("");
 
-  const transfers = r.transfers.length
-    ? r.transfers.map(t => `<div class="tr"><span>${esc(memberName(t.from))}</span><span class="arrow">→</span><span>${esc(memberName(t.to))}</span><span class="amt">${fmtWon(t.amount)}원</span></div>`).join("")
-    : `<div class="tr done"><span>남은 정산 없음.</span></div>`;
-  const done = (opt.payments || []).filter(p => p.from !== FUND_ID && p.to !== FUND_ID).map(p => `<div class="tr done"><span>${esc(memberName(p.from))}</span><span class="arrow">→</span><span>${esc(memberName(p.to))}</span><span class="amt">${fmtWon(p.amount)}원</span><span class="tag ok">완료 ${fmtDate(p.date, "short")}</span></div>`).join("");
-
   const bad = !r.checks.itemsOk || !r.checks.owedOk || r.checks.dupes.length || r.warnings.length;
   const checkLine = bad
     ? [
@@ -183,9 +178,7 @@ export function renderSettlement(root, r, opt = {}) {
     <div class="st-people">${people}${surplusCard}</div>
     ${r.categories.length ? `<div class="lab">카테고리</div><div class="st-catbar">${bar}</div><div class="st-cats">${cats}</div>` : ""}
     <div class="lab">상세 내역</div>${days}
-    <div class="lab" style="margin-top:18px">보낼 돈</div>
-    <div class="st-transfers">${transfers}${done}</div>
-    ${r.surplus && r.adminId ? `<div class="secsub">차액 ${fmtWon(r.surplus)}원은 보낼 돈에 포함돼 총무에게 모이고 ${fundLabel} 잔액으로 잡힘. 총무 부담액은 다른 멤버와 같음.</div>` : ""}
+    ${r.surplus && r.adminId ? `<div class="secsub" style="margin-top:14px">차액 ${fmtWon(r.surplus)}원은 총무가 받아 ${fundLabel} 잔액으로 잡힘. 총무 부담액은 다른 멤버와 같음.</div>` : ""}
     <div class="st-check${bad ? " bad" : ""}">${checkLine}</div>`;
 }
 
