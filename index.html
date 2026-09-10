@@ -40,7 +40,6 @@
 
   <!-- 요약 -->
   <section data-tab="summary" class="on">
-    <div id="sum-next"></div>
     <div id="sum-notes"></div>
     <h2 class="tabh">최근 모임 <span class="cnt" id="sum-count"></span></h2>
     <div id="sum-weeks"><div class="empty">불러오는 중</div></div>
@@ -196,11 +195,6 @@
     statsEl.innerHTML = `
       <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${whenNext}${nextPlan && !nx?.session ? "<br>" + esc(nextPlan) : ""}</span></div>
       <div class="stat"><b>${nx?.presenter ? esc(honor(memberName(nx.presenter))) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>`;
-
-    // 다음 모임 카드(일정 탭의 머리 부분만)
-    const tmp = document.createElement("div");
-    renderSchedule(tmp, sch, { me, nextPlan, weekHref: s => DEMO ? "demo/" : `weeks/${s.id}/` });
-    $("#sum-next").innerHTML = tmp.querySelector(".st-head")?.outerHTML || "";
 
     // 확인할 것: 미납, 보전할 돈, 남은 정산. 제목 / 세부 / 링크를 나눠 한 줄씩.
     const item = (title, detail, link, warn) => `<div class="rowi${warn ? " unpaid" : ""}"><div class="main">${title}<small>${detail}</small></div><span class="ops">${link}</span></div>`;
