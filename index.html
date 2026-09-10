@@ -215,19 +215,24 @@
     renderSchedule(tmp, sch, { me, nextPlan, weekHref: s => DEMO ? "demo/" : `weeks/${s.id}/` });
     $("#sum-next").innerHTML = tmp.querySelector(".st-head")?.outerHTML || "";
 
-    // 확인할 것: 미납, 보전할 돈, 이달 정산
+    // 확인할 것: 미납, 보전할 돈, 남은 정산. 제목 / 세부 / 링크를 나눠 한 줄씩.
+    const item = (title, detail, link, warn) => `<div class="rowi${warn ? " unpaid" : ""}"><div class="main">${title}<small>${detail}</small></div><span class="ops">${link}</span></div>`;
     const notes = [];
-    if (cur && unpaid.length) notes.push(`<div class="note warn">미납 ${unpaid.length}명: ${unpaid.map(p => esc(p.name)).join(", ")} <a href="#" data-tab="fund">회비 탭</a></div>`);
-    else if (cur) notes.push('<div class="note ok">회비 전원 납부 완료</div>');
-    if (f.reimburseTotal) notes.push(`<div class="note">회비에서 보전할 돈 ${fmtWon(f.reimburseTotal)}원 <a href="#" data-tab="fund">회비 탭</a></div>`);
+    if (cur && unpaid.length) notes.push(item(`미납 ${unpaid.length}명`, unpaid.map(p => esc(p.name)).join(", "), '<a href="#" data-tab="fund">회비 탭</a>', true));
+    if (f.reimburseTotal) notes.push(item(`회비에서 보전할 돈 ${fmtWon(f.reimburseTotal)}원`, f.reimburse.filter(x => x.remaining > 0).map(x => `${esc(x.name)} ${fmtWon(x.remaining)}원`).join(", "), '<a href="#" data-tab="fund">회비 탭</a>'));
     const openSplit = sessions.filter(s => expenses.some(x => x.sessionId === s.id && isSplit(x)))
       .map(s => ({ s, rs: computeSettlement({ expenses: expenses.filter(x => x.sessionId === s.id), payments: payments.filter(p => p.sessionId === s.id), sessionsById, members: members() }) }))
       .filter(x => x.rs.transfers.length);
     for (const { s, rs } of openSplit) {
       const mine = rs.transfers.find(t => t.from === me);
-      notes.push(`<div class="note">${fmtDate(s.date, "short")} ${esc(s.title || "")} 정산 남음: ${rs.transfers.length}명${mine ? ` · 내 몫 ${fmtWon(mine.amount)}원 → ${esc(memberName(mine.to))}` : ""} <a href="#" data-tab="months" data-month="${ym(s.date)}">월별 탭</a></div>`);
+      const left = rs.transfers.reduce((a, t) => a + t.amount, 0);
+      notes.push(item(`정산 남음 ${rs.transfers.length}명 · ${fmtWon(left)}원`,
+        `${fmtDate(s.date, "short")} ${esc(s.title || "")}${mine ? ` · 내 몫 ${fmtWon(mine.amount)}원 → ${esc(memberName(mine.to))}` : ""}`,
+        `<a href="#" data-tab="months" data-month="${ym(s.date)}">월별 탭</a>`));
     }
-    $("#sum-notes").innerHTML = notes.join("");
+    $("#sum-notes").innerHTML = notes.length
+      ? `<div class="lab" style="margin-top:16px">확인할 것</div><div class="rows">${notes.join("")}</div>`
+      : (cur ? '<div class="note ok" style="margin-top:16px">미납·정산 남은 것 없음.</div>' : "");
 
     // 최근 모임 3개
     $("#sum-count").textContent = sessions.length ? `${sessions.length}회` : "";
