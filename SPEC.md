@@ -68,6 +68,7 @@ aro-study/
 - `payments/{paymentId}`: `{ sessionId, from: memberId | "fund", to: memberId, amount, date, note }`. 송금 기록. `from`이 `"fund"`면 총무가 아닌 사람이 대신 결제한 회비 지출을 회비에서 보전한 것이고, 그 외는 추가 비용 정산 완료 기록.
 - `comments/{commentId}`: `{ sessionId, author: memberId, text, createdAt, parentId(null) }`. 1단계 답글까지만.
 - `annotations/{id}`: `{ sessionId, author, type: "highlight"|"memo", anchor, text, createdAt }`. anchor는 기존 reader.js가 쓰는 방식(문단 id + 오프셋)을 그대로 유지한다.
+- `resources/{id}`: `{ sessionId, author: memberId, title, url, note, createdAt }`. 발제 주제 관련 자료. 멤버 누구나 올리고 본인 것만 삭제. 파일 업로드는 없고 링크만(Firebase Storage 미사용). (2026-09-10 추가)
 
 인덱스가 필요하면 Firestore 콘솔 링크가 에러로 뜬다. 그 경우 사용자에게 링크를 눌러 인덱스를 만들도록 안내한다.
 
@@ -110,6 +111,7 @@ aro-study/
 3. 다음 모임 계획: 정적 HTML
 4. 비용: `settle.js`의 `mountSettlement`가 이 세션의 expenses를 읽어 두 부분으로 렌더. (1) 회비 지출: 이 회차 합계, 현재 회비 잔액, 내역, 대신 결제분 보전 상태(`fund.js`). (2) 추가 비용(있을 때만): 아래 6절 형식. 항목 목록, 카테고리 합계, 1인 부담액(참석자 기준 균등, 100원 단위 올림, 차액은 회비 귀속), 누가 얼마 냈고 누가 누구에게 얼마 보내야 하는지.
 5. 의견: 댓글 목록 + 입력. 작성자는 선택한 이름. 삭제는 본인 글만(클라이언트 판단, 규칙에서는 로그인만 검사).
+2-1. 관련 자료(`resources.js`, 2026-09-10 추가, 화면 순서는 내용 다음): 제목·링크·메모를 누구나 올리는 목록. 링크는 https 보정, 본인 것만 삭제, 최신순.
 6. 하이라이트·메모: 기존 reader.js 기능. "내 것만 보기 / 전체 보기" 토글 추가. "AI용 복사"는 전체 메모를 사람별로 묶어 텍스트로 만든다.
 
 ### 4-4. admin.html (총무용)

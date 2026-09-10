@@ -24,12 +24,16 @@
     <a class="brief-link" href="https://aro-deeply.github.io/aro-briefs/briefs/2026-09-07-career-ladder/" target="_blank" rel="noopener"><span class="k">CASE BRIEF 02</span><span class="t">AI가 먼저 없애는 것은 사람이 아니라 신입이 숙련자로 성장하던 과정일 수 있다</span><span class="go">브리프 열기</span></a>
   </div>
 
-  <h2><em>2</em>다음 모임 계획</h2>
+  <h2><em>2</em>관련 자료 <span class="cnt" id="res-count"></span></h2>
+  <p class="secsub">발제 주제와 관련된 글, 자료, 생각을 누구나 올림. 파일은 드라이브 등에 올리고 링크를 붙임.</p>
+  <div id="resources"></div>
+
+  <h2><em>3</em>다음 모임 계획</h2>
   <div class="q"><div class="lab">NEXT</div><p>10월 14일(수) 19:30. 각자 자기 조직의 신입 온보딩 과제를 하나씩 가져온다.</p></div>
 
-  <h2><em>3</em>비용</h2>
+  <h2><em>4</em>비용</h2>
   <div id="settle"><div id="settle-fund"></div><div id="settle-split"></div></div>
-  <h2><em>4</em>의견 <span class="cnt" id="comment-count"></span></h2>
+  <h2><em>5</em>의견 <span class="cnt" id="comment-count"></span></h2>
   <div id="comments"></div>
 
   <h2>일정과 발제 (목록 화면과 같은 구성)</h2>
@@ -45,14 +49,16 @@
   import { computeSettlement, renderSettlement } from "../assets/settle.js";
   import { computeFund, renderFund, renderSessionFund, isFund } from "../assets/fund.js";
   import { mountReader, mountComments, memoryStore } from "../assets/reader.js";
+  import { mountResources } from "../assets/resources.js";
   import * as app from "../assets/app.js";
   import { computeSchedule, renderSchedule } from "../assets/schedule.js";
-  import { MEMBERS as M, SESSIONS, EXPENSES as E, PAYMENTS as P, COMMENTS, ANNOTATIONS, TERMS, DUES, SETTINGS, TODAY } from "./sample.js";
+  import { MEMBERS as M, SESSIONS, EXPENSES as E, PAYMENTS as P, COMMENTS, ANNOTATIONS, RESOURCES, TERMS, DUES, SETTINGS, TODAY } from "./sample.js";
   app.setMembers(M);
 
   // 하이라이트·메모·의견: 메모리 저장소(저장 안 됨). 나는 멤버A.
   const ME = "a";
   window.__reader = mountReader({ sessionId: "2026-09-09", me: ME, store: memoryStore(ANNOTATIONS), root: document.getElementById("content") });
+  window.__resources = mountResources({ sessionId: "2026-09-09", me: ME, store: memoryStore(RESOURCES), root: document.getElementById("resources"), countEl: document.getElementById("res-count") });
   window.__comments = mountComments({ sessionId: "2026-09-09", me: ME, store: memoryStore(COMMENTS), root: document.getElementById("comments"), countEl: document.getElementById("comment-count") });
 
   const S = Object.fromEntries(SESSIONS.map(s => [s.id, s]));

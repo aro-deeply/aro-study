@@ -13,7 +13,7 @@
   주차 페이지 템플릿. weeks/<YYYY-MM-DD>/index.html 로 복제해서 쓴다.
   치환할 자리: {{SESSION_ID}} {{WEEK_NO}} {{DATE_LABEL}} {{TITLE}} {{CONTENT}} {{NEXT_PLAN}}
   정적 HTML에 두는 것: 제목, 날짜, 그날 다룬 내용 요약, 관련 브리프 링크, 다음 모임 계획.
-  이름·금액·의견·참석자는 전부 Firestore에서 읽는다. 여기 하드코딩하지 않는다.
+  이름·금액·의견·참석자·관련 자료는 전부 Firestore에서 읽는다. 여기 하드코딩하지 않는다.
   금지: em dash, 이모지, 세리프 폰트.
 -->
 <body data-session="{{SESSION_ID}}">
@@ -37,13 +37,17 @@
     <span class="k">CASE BRIEF 00</span><span class="t">브리프 제목</span><span class="go">브리프 열기</span></a>
   -->
 
-  <h2><em>2</em>다음 모임 계획</h2>
+  <h2><em>2</em>관련 자료 <span class="cnt" id="res-count"></span></h2>
+  <p class="secsub">발제 주제와 관련된 글, 자료, 생각을 누구나 올림. 파일은 드라이브 등에 올리고 링크를 붙임.</p>
+  <div id="resources"><div class="empty">자료 불러오는 중</div></div>
+
+  <h2><em>3</em>다음 모임 계획</h2>
   <div class="q" id="next-plan"><div class="lab">NEXT</div><p>{{NEXT_PLAN}}</p></div>
 
-  <h2><em>3</em>비용</h2>
+  <h2><em>4</em>비용</h2>
   <div id="settle"></div>
 
-  <h2><em>4</em>의견 <span class="cnt" id="comment-count"></span></h2>
+  <h2><em>5</em>의견 <span class="cnt" id="comment-count"></span></h2>
   <div id="comments"><div class="empty">의견 불러오는 중</div></div>
 
   <p class="foot">HR STUDY. 이름과 금액은 로그인한 멤버에게만 보임. <a href="../../">홈으로</a></p>
@@ -53,10 +57,12 @@
   import { ready, esc, memberName, honor, fmtDate, $ } from "../../assets/app.js";
   import { mountSettlement } from "../../assets/settle.js";
   import { mountReader, mountComments } from "../../assets/reader.js";
+  import { mountResources } from "../../assets/resources.js";
 
   const sessionId = document.body.dataset.session || location.pathname.split("/").filter(Boolean).slice(-1)[0];
   const { me } = await ready();
   mountComments({ sessionId, me, root: $("#comments"), countEl: $("#comment-count") });
+  mountResources({ sessionId, me, root: $("#resources"), countEl: $("#res-count") });
   mountReader({ sessionId, me, root: $("#content") });
   const data = await mountSettlement($("#settle"), sessionId, { adminHint: "../../admin.html" });
   const s = data?.session;

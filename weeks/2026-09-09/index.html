@@ -29,25 +29,27 @@
 <p>회비는 1인 5만 원 / 6개월.<br>월별 예산을 정해 사용하고, 잔액은 다음 달로 이월.</p>
 <p>회비 외 추가 비용은 당일 참석자 기준 1/N 정산.<br>100원 단위로 올림하고, 차액은 회비에 적립.</p>
 <p>이번 모임은 OT이므로 회비 없이 실제 발생 비용만 정산.<br>1월부터 합류하는 멤버는 합류 시점부터 회비 납부 (김효경 님).</p>
-<div class="box"><div class="lab">정리</div><p>정기 모임 일정, 발제 순서, 회비 운영 방식 수립.</p></div>
+<div class="box"><div class="lab">정리</div><p>정기 모임 일정 · 발제 순서 · 회비 운영 방식.</p></div>
 
 <h3>발제: HR, AI로 업무를 바꾸고 데이터로 판단하다</h3>
-<p>발제와 토론 내용은 정리 전. 메모가 모이면 채움. 같은 날 공개된 아래 브리프가 같은 주제.</p>
-<a class="brief-link" href="https://aro-deeply.github.io/aro-briefs/briefs/2026-09-09-work-redesign/" target="_blank" rel="noopener">
-  <span class="k">CASE BRIEF 03</span><span class="t">AI 도입 뒤의 문제는 '더 잘 쓰는 법'이 아니라 일을 그대로 둔 채 AI만 얹었다는 데 있을 수 있다</span><span class="go">브리프 열기</span></a>
+<p>발제와 토론 내용은 정리 전. 메모가 모이면 채움.<br>관련 글이나 자료는 아래 ‘관련 자료’에 자유롭게.</p>
   </div>
   <!-- 관련 브리프가 있으면 위 CONTENT 안에 아래 카드 형식으로 넣는다.
   <a class="brief-link" href="https://aro-deeply.github.io/aro-briefs/briefs/YYYY-MM-DD-slug/" target="_blank" rel="noopener">
     <span class="k">CASE BRIEF 00</span><span class="t">브리프 제목</span><span class="go">브리프 열기</span></a>
   -->
 
-  <h2><em>2</em>다음 모임 계획</h2>
+  <h2><em>2</em>관련 자료 <span class="cnt" id="res-count"></span></h2>
+  <p class="secsub">발제 주제와 관련된 글, 자료, 생각을 누구나 올림. 파일은 드라이브 등에 올리고 링크를 붙임.</p>
+  <div id="resources"><div class="empty">자료 불러오는 중</div></div>
+
+  <h2><em>3</em>다음 모임 계획</h2>
   <div class="q" id="next-plan"><div class="lab">NEXT</div><p>10월 7일(수) 오후 7시, 코엑스 노타AI. 발제는 순서 1번.</p></div>
 
-  <h2><em>3</em>비용</h2>
+  <h2><em>4</em>비용</h2>
   <div id="settle"></div>
 
-  <h2><em>4</em>의견 <span class="cnt" id="comment-count"></span></h2>
+  <h2><em>5</em>의견 <span class="cnt" id="comment-count"></span></h2>
   <div id="comments"><div class="empty">의견 불러오는 중</div></div>
 
   <p class="foot">HR STUDY. 이름과 금액은 로그인한 멤버에게만 보임. <a href="../../">홈으로</a></p>
@@ -57,10 +59,12 @@
   import { ready, esc, memberName, honor, fmtDate, $ } from "../../assets/app.js";
   import { mountSettlement } from "../../assets/settle.js";
   import { mountReader, mountComments } from "../../assets/reader.js";
+  import { mountResources } from "../../assets/resources.js";
 
   const sessionId = document.body.dataset.session || location.pathname.split("/").filter(Boolean).slice(-1)[0];
   const { me } = await ready();
   mountComments({ sessionId, me, root: $("#comments"), countEl: $("#comment-count") });
+  mountResources({ sessionId, me, root: $("#resources"), countEl: $("#res-count") });
   mountReader({ sessionId, me, root: $("#content") });
   const data = await mountSettlement($("#settle"), sessionId, { adminHint: "../../admin.html" });
   const s = data?.session;

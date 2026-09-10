@@ -24,7 +24,7 @@ def check(path):
     if m:
         ds = re.search(r'data-session="([^"]*)"', s)
         if not ds or ds.group(1) != m.group(1): errs.append(f"data-session 이 폴더명({m.group(1)})과 다름")
-        for need in ('id="content"', 'id="settle"', 'id="comments"', "settle.js", "reader.js"):
+        for need in ('id="content"', 'id="settle"', 'id="comments"', 'id="resources"', "settle.js", "reader.js", "resources.js"):
             if need not in s: errs.append(f"필수 요소 없음: {need}")
         if re.search(r"\d{1,3}(,\d{3})+\s*원", s): errs.append("정적 HTML에 금액으로 보이는 숫자가 있음 (금액은 Firestore에만)")
     return errs

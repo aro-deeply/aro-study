@@ -42,6 +42,10 @@ export const COMMENTS = [
   { id: "c1", sessionId: "2026-09-09", author: "b", text: "신입 온보딩 과제를 가져오는 건 좋은데, 팀별 편차가 클 것 같아요. 공통 양식이 있으면 좋겠습니다.", parentId: null, createdAt: new Date(Date.now() - 7200e3) },
   { id: "c2", sessionId: "2026-09-09", author: "a", text: "양식은 제가 초안 만들어서 공유할게요.", parentId: "c1", createdAt: new Date(Date.now() - 5400e3) },
 ];
+export const RESOURCES = [
+  { id: "r1", sessionId: "2026-09-09", author: "c", title: "일을 다시 설계하지 않으면 AI는 개인 도구에 머문다", url: "https://aro-deeply.github.io/aro-briefs/", note: "발제 마지막에 나온 과업·판단·책임 얘기와 이어지는 글. 2절만 봐도 됨.", createdAt: new Date(Date.now() - 5000e3) },
+  { id: "r2", sessionId: "2026-09-09", author: "a", title: "우리 팀 온보딩 체크리스트 (드라이브)", url: "https://drive.google.com/", note: "다음 모임 과제용 양식 초안.", createdAt: new Date(Date.now() - 2000e3) },
+];
 export const ANNOTATIONS = [
   { id: "x1", sessionId: "2026-09-09", author: "b", type: "memo", anchor: { start: 60, end: 90 }, text: "", note: "우리 회사도 같은 원칙이면 좋겠다", createdAt: new Date(Date.now() - 3600e3) },
 ];

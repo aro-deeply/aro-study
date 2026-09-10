@@ -15,7 +15,7 @@
    월별 가용 금액(2026-09-10 추가) = 회비 총액(1인 회비 x 대상 인원)을 months로 나눈 배정액 + 이전 달까지 덜 쓴 이월분.
      월 배정액은 100원 단위 올림이고, 마지막 달은 남는 금액(그만큼 적을 수 있다).
 */
-import { esc, fmtWon, fmtDate, todayStr, memberName, memberById, ceil100 } from "./app.js";
+import { esc, fmtWon, fmtDate, todayStr, memberName, memberById, ceil100, toast } from "./app.js";
 import { ym, addMonths, lastDayOf, fmtMonth, isYm } from "./schedule.js";
 
 export const isFund = x => x && x.source === "fund";
@@ -126,6 +126,22 @@ export function computeBudget({ start, months, total, expenses = [], today = tod
   return { months, monthly, last: rows[rows.length - 1].alloc, total, rows, current: rows.find(r => r.isCurrent) || null, status, startYm, endYm };
 }
 
+/** 계좌 문자열에서 번호만(숫자·하이픈) 뽑는다. 없으면 전체를 돌려준다. */
+export function accountNumber(s) { const m = String(s || "").match(/[\d-]{8,}/); return m ? m[0] : String(s || ""); }
+/** data-copy 버튼: 누르면 클립보드에 복사. root마다 한 번만 건다. */
+function bindCopy(root) {
+  if (root.dataset.copyBound) return; root.dataset.copyBound = "1";
+  root.addEventListener("click", async e => {
+    const b = e.target.closest("button[data-copy]"); if (!b) return;
+    const text = b.dataset.copy;
+    try {
+      if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+      else { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); }
+      toast("복사했습니다: " + text);
+    } catch (ex) { console.error(ex); toast("복사 실패. 길게 눌러 직접 복사하세요", 3000); }
+  });
+}
+
 /** 회비 기간 문구: "2026.09 ~ 2027.02", 둘 다 비어 있으면 "기간 미정" */
 export function termPeriod(t) {
   const dot = s => s ? String(s).slice(0, 7).replace("-", ".") : "";
@@ -168,7 +184,7 @@ export function renderFund(root, f, opt = {}) {
       <div class="st-total${neg ? " neg" : ""}"><div class="lab">회비 잔액</div><b>${fmtWon(f.balance)}<small>원</small></b>
         <span>${incomeLine(f)}${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
       <div class="st-rule"><div class="lab">${t ? esc(t.name || "회비") : "회비 설정 없음"}</div>
-        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq" style="font-weight:500">입금 계좌: ${esc(t.account)}</div>` : ""}${t.note ? `<div class="secsub" style="margin:4px 0 0">${esc(t.note)}</div>` : ""}` : "회비 설정 없이 납부·지출만 합산."}
+        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq" style="font-weight:500">입금 계좌: ${esc(t.account)} <button type="button" class="copy-btn" data-copy="${esc(accountNumber(t.account))}">번호 복사</button></div>` : ""}${t.note ? `<div class="secsub" style="margin:4px 0 0">${esc(t.note)}</div>` : ""}` : "회비 설정 없이 납부·지출만 합산."}
         ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액을 넘음.</div>' : ""}</div>
     </div>`;
 
@@ -196,6 +212,7 @@ export function renderFund(root, f, opt = {}) {
     ${t ? renderBudget(t.budget) : ""}
     ${t ? `<div class="lab" style="margin-top:16px">멤버별 납부</div><table class="stack dues"><thead><tr><th>멤버</th><th>상태</th><th class="amt">납부액</th><th>납부일</th></tr></thead><tbody>${rows}</tbody></table>${unpaidLine}` : ""}
     ${reimb}${past}`;
+  bindCopy(root);
 }
 
 /** "이달 가용 x원 (이월 y원 포함)" 한 줄. 월별 예산이 없으면 빈 문자열. */

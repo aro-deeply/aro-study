@@ -277,6 +277,22 @@ table.dues tr[data-unpaid] td:first-child{color:var(--danger)}
 .cm-form textarea{min-height:88px}
 .cm-form .actions{justify-content:flex-end}
 
+/* 관련 자료 */
+.res-list{margin-bottom:16px}
+.res{padding:12px 0;border-bottom:1px solid var(--line)}
+.res .ttl{font-size:.9375rem;font-weight:700;line-height:1.5}
+.res .ttl a{border-bottom:1px solid var(--line)}
+.res .dom{font-size:.75rem;font-weight:500;color:var(--muted-soft);margin-left:8px}
+.res .nt{color:var(--ink-80);font-size:.9rem;line-height:1.6;white-space:pre-wrap;margin-top:2px}
+.res .hd{display:flex;align-items:baseline;gap:8px;font-size:.75rem;color:var(--muted-soft);margin-top:4px}
+.res .hd b{color:var(--ink);font-weight:600}
+.res .hd .ops{margin-left:auto}
+.res-form textarea{min-height:72px}
+.res-form .actions{justify-content:flex-end}
+/* 복사 버튼(계좌번호 등) */
+.copy-btn{font:inherit;font-size:.75rem;font-weight:600;color:var(--accent-dark);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:1px 10px;margin-left:8px;cursor:pointer;vertical-align:middle}
+.copy-btn:hover{border-color:var(--accent)}
+
 /* ---------- 10. 하이라이트·메모 (aro-briefs reader) ---------- */
 mark.rd-mark{background:#F3E3B5;color:inherit;padding:0 1px;border-radius:2px;cursor:pointer;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 mark.rd-mark.has-note{background:#EBD9A6}
