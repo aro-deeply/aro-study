@@ -272,6 +272,10 @@
     sch = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 12, untilEnd: true });
     window.__fund = f; window.__r = r; window.__sched = sch;
 
+    // 공지: settings/notice에 내용이 있고 종료일이 지나지 않았으면 상단 배너로. 없으면 아무것도 없음.
+    const nt = settings?.notice;
+    if (!DEMO && nt?.text && (!nt.until || today <= nt.until)) $("#note").innerHTML = `<div class="note" style="white-space:pre-line">${esc(nt.text)}</div>`;
+
     renderSummary();
     $("#sched-sub").textContent = "";
     renderSchedule($("#sched"), sch, { me, adminHint: isAdmin() ? "admin.html" : "", weekHref: s => DEMO ? "demo/" : `weeks/${s.id}/` });

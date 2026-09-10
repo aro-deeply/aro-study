@@ -104,8 +104,10 @@ export function computeSchedule({ meeting, rotation, sessions = [], today = toda
 
 /* ---------- Firestore ---------- */
 export async function loadSettings() {
-  const [ms, rs] = await Promise.all([getDoc(doc(db, "settings", "meeting")), getDoc(doc(db, "settings", "rotation"))]);
-  return { meeting: normalizeMeeting(ms.exists() ? ms.data() : null), rotation: normalizeRotation(rs.exists() ? rs.data() : null), hasMeeting: ms.exists(), hasRotation: rs.exists() };
+  const [ms, rs, ns] = await Promise.all([getDoc(doc(db, "settings", "meeting")), getDoc(doc(db, "settings", "rotation")), getDoc(doc(db, "settings", "notice"))]);
+  const n = ns.exists() ? ns.data() : null;
+  return { meeting: normalizeMeeting(ms.exists() ? ms.data() : null), rotation: normalizeRotation(rs.exists() ? rs.data() : null),
+    notice: { text: n?.text || "", until: n?.until || "" }, hasMeeting: ms.exists(), hasRotation: rs.exists() };
 }
 
 /* ---------- 렌더 ---------- */
