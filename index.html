@@ -122,7 +122,7 @@
     if (!upcoming) facts.push(`의견 <b>${commentCount[s.id] || 0}개</b>`);
     const tag = s.page ? "" : (upcoming ? ' <span class="tag">예정</span>' : ' <span class="tag">기록 작성 전</span>');
     const inner = `<div class="meta"><b>WEEK ${no}</b><span>${fmtDate(s.date)}</span></div>
-      <h3>${esc(s.title || (upcoming ? "다음 모임" : "(제목 없음)"))}${tag}</h3>
+      <h3>${esc(s.title || (upcoming ? "주제 미정" : "(제목 없음)"))}${tag}</h3>
       <div class="facts">${facts.map(x => `<span>${x}</span>`).join("")}</div>`;
     const href = DEMO ? "demo/" : `weeks/${esc(s.id)}/`;
     return s.page ? `<a class="week" href="${href}">${inner}</a>` : `<div class="week nopage">${inner}</div>`;
