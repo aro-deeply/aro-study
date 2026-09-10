@@ -37,26 +37,26 @@ export function mountResources({ sessionId, me = "", store, root, countEl } = {}
           <span class="ops">${r.author === me ? `<button class="link-btn danger" data-op="del" data-id="${esc(r.id)}">삭제</button>` : ""}</span></div>
       </div>`;
     root.innerHTML = `
-      <div class="res-list">${list.map(one).join("") || '<div class="empty">아직 올라온 자료 없음. 발제 주제와 관련된 글, 자료, 생각을 자유롭게 올려 주세요.</div>'}</div>
+      <div class="res-list">${list.map(one).join("") || '<div class="empty">아직 올라온 자료 없음</div>'}</div>
       <form class="res-form" id="res-form">
         <div class="row stack">
-          <div class="field"><label for="res-title">제목</label><input id="res-title" type="text" required placeholder="자료 이름이나 한 줄 요약" autocomplete="off"${me ? "" : " disabled"}></div>
-          <div class="field"><label for="res-url">링크</label><input id="res-url" type="text" inputmode="url" placeholder="선택. 글, 드라이브 파일, 영상 주소" autocomplete="off"${me ? "" : " disabled"}></div>
+          <div class="field"><label for="res-title">제목</label><input id="res-title" type="text" required placeholder="자료 이름 또는 한 줄 요약" autocomplete="off"${me ? "" : " disabled"}></div>
+          <div class="field"><label for="res-url">링크</label><input id="res-url" type="text" inputmode="url" placeholder="선택 · 글, 파일, 영상 주소" autocomplete="off"${me ? "" : " disabled"}></div>
         </div>
-        <div class="field"><textarea id="res-note" style="min-height:72px" placeholder="${me ? "선택. 왜 관련 있는지, 어떤 부분을 보면 좋은지" : "상단에서 이름을 선택하면 올릴 수 있습니다"}"${me ? "" : " disabled"}></textarea></div>
-        <div class="actions"><button class="btn" type="submit"${me ? "" : " disabled"}>자료 올리기</button></div>
+        <div class="field"><textarea id="res-note" style="min-height:72px" placeholder="${me ? "선택 · 관련된 이유, 볼 만한 부분" : "상단에서 이름을 선택하면 올릴 수 있음"}"${me ? "" : " disabled"}></textarea></div>
+        <div class="actions"><button class="btn" type="submit"${me ? "" : " disabled"}>올리기</button></div>
       </form>`;
     if (countEl) countEl.textContent = list.length ? `${list.length}건` : "";
   }
   root.addEventListener("submit", async e => {
     e.preventDefault();
     if (e.target.id !== "res-form") return;
-    if (!me) { toast("상단에서 이름을 먼저 선택하세요"); return; }
+    if (!me) { toast("상단에서 이름을 먼저 선택"); return; }
     const title = $("#res-title", root).value.trim(), rawUrl = $("#res-url", root).value.trim(), note = $("#res-note", root).value.trim();
     const url = normalizeUrl(rawUrl);
-    if (!title) { toast("제목을 입력하세요"); return; }
-    if (rawUrl && !url) { toast("링크 주소 형식을 확인하세요"); return; }
-    try { await store.add({ author: me, title, url, note }); toast("올렸습니다"); }
+    if (!title) { toast("제목 입력 필요"); return; }
+    if (rawUrl && !url) { toast("링크 주소 형식 확인"); return; }
+    try { await store.add({ author: me, title, url, note }); toast("등록됨"); }
     catch (ex) { console.error(ex); toast("저장 실패: " + ex.message, 3000); }
   });
   root.addEventListener("click", async e => {

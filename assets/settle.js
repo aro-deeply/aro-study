@@ -45,9 +45,9 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
     if (!group.length) {
       // 참석자 정보가 없으면 활성 멤버 전원으로 본다.
       group = members.filter(m => m.active !== false).map(m => m.id);
-      if (group.length) warnings.push(`"${x.item}"의 분배 대상이 비어 있어 활성 멤버 전원으로 계산했습니다.`);
+      if (group.length) warnings.push(`"${x.item}" 분배 대상이 비어 활성 멤버 전원으로 계산`);
     }
-    if (!group.length) { warnings.push(`"${x.item}"을 나눌 대상이 없습니다.`); continue; }
+    if (!group.length) { warnings.push(`"${x.item}" 분배 대상 없음`); continue; }
     // 회차(sessionId)가 다르면 따로 나눈다. 같은 회차에서 분배 대상이 같은 항목만 합산.
     const key = `${x.sessionId || ""}|${group.slice().sort().join(",")}`;
     (groups[key] ||= { ids: group, amount: 0 }).amount += amount;
@@ -68,7 +68,7 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
   // 회비 귀속분은 회비 보관자(총무)가 받는다.
   if (surplus) {
     if (adminId) { add(balance, adminId, surplus); ids.add(adminId); }
-    else warnings.push(`회비 귀속분 ${surplus.toLocaleString("ko-KR")}원을 받을 총무가 없습니다.`);
+    else warnings.push(`회비 적립분 ${surplus.toLocaleString("ko-KR")}원을 받을 총무가 없음`);
   }
   for (const p of payments) {
     const a = Math.round(Number(p.amount) || 0);
@@ -128,12 +128,12 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
 export function renderSettlement(root, r, opt = {}) {
   const title = opt.title || "정산";
   if (!r.count) {
-    root.innerHTML = opt.emptyText === "" ? "" : `<div class="empty">${esc(opt.emptyText || "등록된 지출 없음.")}${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#expenses">관리 화면</a>에서 입력하면 표시됨.' : ""}</div>`;
+    root.innerHTML = opt.emptyText === "" ? "" : `<div class="empty">${esc(opt.emptyText || "등록된 지출 없음")}${opt.adminHint ? ' · <a href="' + esc(opt.adminHint) + '#expenses">관리</a>에서 입력' : ""}</div>`;
     return;
   }
   const rule = r.uniform && r.n
-    ? `참석 ${r.n}인 균등, 100원 단위 올림. 차액은 회비로.<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원${r.surplus ? ` (${fmtWon(r.surplus)}원 회비 귀속)` : ""}</div>`
-    : `분배 대상이 같은 항목끼리 합쳐 균등, 100원 단위 올림. 차액${r.surplus ? ` ${fmtWon(r.surplus)}원` : ""}은 회비로.`;
+    ? `참석 ${r.n}명 균등 · 100원 단위 올림 · 차액은 회비 적립<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원${r.surplus ? ` (${fmtWon(r.surplus)}원 적립)` : ""}</div>`
+    : `분배 대상이 같은 항목끼리 균등 · 100원 단위 올림 · 차액${r.surplus ? ` ${fmtWon(r.surplus)}원` : ""}은 회비 적립`;
 
   const people = r.people.map(p => `
     <div class="st-person${p.isAdmin ? " is-admin" : ""}">
@@ -144,9 +144,9 @@ export function renderSettlement(root, r, opt = {}) {
   // 올림으로 더 걷히는 금액: 총무 부담이 아니라 총무가 받아서 회비로 보관하는 돈
   const surplusCard = r.surplus ? `
     <div class="st-person" style="border-style:dashed">
-      <div class="nm">${fundLabel} 귀속</div>
+      <div class="nm">${fundLabel} 적립</div>
       <b>${fmtWon(r.surplus)}원</b>
-      <span>${fmtWon(r.share || 0)} x ${r.n || "n"}명 - ${fmtWon(r.total)}${r.adminId ? ` · 총무가 받아 ${fundLabel}로 보관` : ""}</span>
+      <span>${fmtWon(r.share || 0)} x ${r.n || "n"}명 - ${fmtWon(r.total)}${r.adminId ? ` · 총무 보관` : ""}</span>
     </div>` : "";
 
   const catTotal = r.categories.reduce((s, c) => s + c.amount, 0) || 1;
@@ -178,7 +178,7 @@ export function renderSettlement(root, r, opt = {}) {
     <div class="st-people">${people}${surplusCard}</div>
     ${r.categories.length ? `<div class="lab">카테고리</div><div class="st-catbar">${bar}</div><div class="st-cats">${cats}</div>` : ""}
     <div class="lab">상세 내역</div>${days}
-    ${r.surplus && r.adminId ? `<div class="secsub" style="margin-top:14px">차액 ${fmtWon(r.surplus)}원은 총무가 받아 ${fundLabel} 잔액으로 잡힘. 총무 부담액은 다른 멤버와 같음.</div>` : ""}
+    ${r.surplus && r.adminId ? `<div class="secsub" style="margin-top:14px">차액 ${fmtWon(r.surplus)}원은 ${fundLabel}에 적립. 총무 부담액은 다른 멤버와 동일.</div>` : ""}
     <div class="st-check${bad ? " bad" : ""}">${checkLine}</div>`;
 }
 
@@ -232,7 +232,7 @@ export async function mountSettlement(root, sessionId, opt = {}) {
     renderSettlement(sub, r, {
       ...opt, payments, subtitle: opt.subtitle ?? (session?.date ? fmtDate(session.date) : ""),
       totalLabel: fundItems.length ? "추가 비용" : "총 지출",
-      emptyText: fundItems.length ? "" : (opt.emptyText || "아직 등록된 지출이 없습니다.")
+      emptyText: fundItems.length ? "" : (opt.emptyText || "등록된 지출 없음")
     });
     return { session, expenses, payments, result: r, fund: f };
   } catch (ex) {

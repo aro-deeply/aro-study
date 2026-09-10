@@ -115,25 +115,25 @@ export function mountReader({ sessionId, me = "", store, root, title } = {}) {
   }
 
   /* ----- 동작 ----- */
-  function needName() { if (!me) { toast("상단에서 이름을 먼저 선택하세요"); return true; } return false; }
+  function needName() { if (!me) { toast("상단에서 이름을 먼저 선택"); return true; } return false; }
   async function add(withNote) {
     if (needName()) return;
     const sel = window.getSelection(); if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
     const r = sel.getRangeAt(0); if (!ROOT.contains(r.commonAncestorContainer)) return;
-    const off = rangeToOffsets(r); if (!off) { toast("이 구간은 표시할 수 없습니다"); return; }
-    if (state.some(h => h.author === me && off.start < h.anchor.end && off.end > h.anchor.start)) { toast("내가 이미 표시한 구간과 겹칩니다"); return; }
+    const off = rangeToOffsets(r); if (!off) { toast("이 구간은 표시할 수 없음"); return; }
+    if (state.some(h => h.author === me && off.start < h.anchor.end && off.end > h.anchor.start)) { toast("이미 표시한 구간과 겹침"); return; }
     const text = r.toString().replace(/\s+/g, " ").trim();
     let note = "";
     if (withNote) { const v = window.prompt("메모", ""); if (v === null) return; note = v.trim(); }
     sel.removeAllRanges(); hideFloat();
     try {
       await store.add({ author: me, type: note ? "memo" : "highlight", anchor: off, text, note });
-      toast(note ? "메모를 저장했습니다" : "하이라이트를 저장했습니다");
+      toast(note ? "메모 저장됨" : "하이라이트 저장됨");
     } catch (ex) { console.error(ex); toast("저장 실패: " + ex.message, 3000); }
   }
   async function edit(id) {
     const h = state.find(x => x.id === id); if (!h) return;
-    if (h.author !== me) { toast(`${who(h.author)}의 표시입니다. 본인 것만 고칠 수 있습니다`); return; }
+    if (h.author !== me) { toast(`${who(h.author)}의 표시 · 본인 것만 수정 가능`); return; }
     const v = window.prompt('메모 수정 (비우면 메모만 삭제, "삭제"라고 쓰면 하이라이트도 삭제)', h.note || "");
     if (v === null) return;
     const t = v.trim();
@@ -162,15 +162,15 @@ export function mountReader({ sessionId, me = "", store, root, title } = {}) {
     }
     if (!state.length) lines.push("(표시한 구간이 없음)");
     const out = lines.join("\n");
-    const done = () => toast("복사됨. AI 대화창에 붙여 넣으세요");
+    const done = () => toast("복사됨 · AI 대화창에 붙여 넣기");
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(out).then(done, () => { fallback(out); done(); });
     else { fallback(out); done(); }
     return out;
   }
   function fallback(t) { const ta = document.createElement("textarea"); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy"); } catch (e) { } ta.remove(); }
   async function reset() {
-    const mine = state.filter(h => h.author === me); if (!mine.length) { toast("지울 내 표시가 없습니다"); return; }
-    if (!confirm(`이 페이지의 내 하이라이트와 메모 ${mine.length}개를 모두 지울까요? 다른 사람 것은 그대로 둡니다.`)) return;
+    const mine = state.filter(h => h.author === me); if (!mine.length) { toast("지울 내 표시 없음"); return; }
+    if (!confirm(`내 하이라이트와 메모 ${mine.length}개를 모두 지울까요? 다른 사람 것은 그대로.`)) return;
     try { await store.removeMany(mine.map(h => h.id)); } catch (ex) { console.error(ex); toast("삭제 실패: " + ex.message, 3000); }
   }
 
@@ -238,7 +238,7 @@ export function mountComments({ sessionId, me = "", store, root, countEl } = {})
   let items = [];
   let replyTo = null;
 
-  function needName() { if (!me) { toast("상단에서 이름을 먼저 선택하세요"); return true; } return false; }
+  function needName() { if (!me) { toast("상단에서 이름을 먼저 선택"); return true; } return false; }
 
   function render() {
     const live = items.filter(c => !c.deleted || items.some(r => r.parentId === c.id));
@@ -252,10 +252,10 @@ export function mountComments({ sessionId, me = "", store, root, countEl } = {})
       </div>`;
     const list = tops.map(c => one(c, false) + replies(c.id).map(r => one(r, true)).join("") + (replyTo === c.id ? replyForm(c) : "")).join("");
     root.innerHTML = `
-      <div class="cm-list">${list || '<div class="empty">아직 의견이 없습니다. 첫 의견을 남겨 보세요.</div>'}</div>
+      <div class="cm-list">${list || '<div class="empty">아직 의견 없음</div>'}</div>
       <form class="cm-form" id="cm-form">
-        <div class="field"><textarea id="cm-text" placeholder="${me ? "의견을 남겨 주세요" : "상단에서 이름을 선택하면 의견을 남길 수 있습니다"}"${me ? "" : " disabled"}></textarea></div>
-        <div class="actions"><button class="btn" type="submit"${me ? "" : " disabled"}>의견 남기기</button></div>
+        <div class="field"><textarea id="cm-text" placeholder="${me ? "의견" : "상단에서 이름을 선택하면 남길 수 있음"}"${me ? "" : " disabled"}></textarea></div>
+        <div class="actions"><button class="btn" type="submit"${me ? "" : " disabled"}>남기기</button></div>
       </form>`;
     const n = live.filter(c => !c.deleted).length;
     if (countEl) countEl.textContent = n ? `${n}개` : "";
@@ -264,12 +264,12 @@ export function mountComments({ sessionId, me = "", store, root, countEl } = {})
   function replyForm(c) {
     return `<form class="cm reply cm-form" id="cm-reply" data-parent="${esc(c.id)}">
       <div class="field"><textarea id="cm-reply-text" placeholder="${esc(who(c.author))}에게 답글"></textarea></div>
-      <div class="actions"><button class="btn quiet sm" type="button" id="cm-reply-cancel">취소</button><button class="btn sm" type="submit">답글 남기기</button></div></form>`;
+      <div class="actions"><button class="btn quiet sm" type="button" id="cm-reply-cancel">취소</button><button class="btn sm" type="submit">답글</button></div></form>`;
   }
   async function post(text, parentId = null) {
     if (needName()) return;
     text = text.trim(); if (!text) return;
-    try { await store.add({ author: me, text, parentId }); toast("의견을 남겼습니다"); }
+    try { await store.add({ author: me, text, parentId }); toast("등록됨"); }
     catch (ex) { console.error(ex); toast("저장 실패: " + ex.message, 3000); }
   }
   root.addEventListener("submit", async e => {

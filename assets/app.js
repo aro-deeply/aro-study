@@ -145,7 +145,7 @@ function showGate() {
           <div class="field"><label for="gate-pw">비밀번호</label>
             <input id="gate-pw" type="password" name="password" autocomplete="current-password" placeholder="공용 비밀번호" required autofocus></div>
           <div class="err" id="gate-err"></div>
-          <button class="btn block" type="submit">들어가기</button>
+          <button class="btn block" type="submit">입장</button>
         </form>
       </div>`);
     document.body.appendChild(g);
@@ -161,7 +161,7 @@ function showGate() {
         resolve(auth.currentUser);
       } catch (ex) {
         err.textContent = authError(ex.code || "");
-        btn.disabled = false; btn.textContent = "들어가기";
+        btn.disabled = false; btn.textContent = "입장";
         pw.select();
       }
     });
@@ -178,11 +178,11 @@ export function showNamePicker(list = activeMembers()) {
         <form class="panel">
           <div class="brand"><small>HR STUDY</small><b>이름 선택</b></div>
           ${list.length ? `
-          <div class="field"><label for="np-sel">누구로 기록할까요?</label>
-            <select id="np-sel" required><option value="" disabled${cur ? "" : " selected"}>이름을 고르세요</option>${opts}</select>
-            <div class="help">이 기기에 기억됩니다. 상단의 이름을 눌러 바꿀 수 있습니다.</div></div>
+          <div class="field"><label for="np-sel">이름</label>
+            <select id="np-sel" required><option value="" disabled${cur ? "" : " selected"}>선택</option>${opts}</select>
+            <div class="help">이 기기에 기억됨 · 상단 이름에서 변경</div></div>
           <button class="btn block" type="submit">계속</button>` : `
-          <div class="note">아직 등록된 멤버가 없습니다. 총무가 admin 화면에서 멤버를 먼저 추가해야 합니다.</div>
+          <div class="note">등록된 멤버 없음 · 총무가 관리 화면에서 추가</div>
           <button class="btn block" type="submit">이름 없이 계속</button>`}
         </form>
       </div>`);
@@ -219,7 +219,7 @@ export function renderTopbar() {
       <button class="out" type="button">로그아웃</button>
     </div></div>`;
   $(".me", bar).addEventListener("click", async () => { await showNamePicker(); document.dispatchEvent(new CustomEvent("aro:me", { detail: getMe() })); });
-  $(".out", bar).addEventListener("click", () => { if (confirm("로그아웃할까요? 다음에 비밀번호를 다시 입력해야 합니다.")) logout(); });
+  $(".out", bar).addEventListener("click", () => { if (confirm("로그아웃할까요? 다음 방문 때 비밀번호를 다시 입력.")) logout(); });
   return bar;
 }
 
@@ -235,7 +235,7 @@ export async function ready(opt = {}) {
   if (!user) user = await showGate();
   let list;
   try { list = await loadMembers(); }
-  catch (ex) { console.error(ex); toast("멤버 목록을 읽지 못했습니다. Firestore 규칙을 확인하세요."); list = []; }
+  catch (ex) { console.error(ex); toast("멤버 목록을 읽지 못함 · Firestore 규칙 확인"); list = []; }
   let me = getMe();
   const valid = me && list.some(m => m.id === me && m.active !== false);
   if (requireName && !valid) me = await showNamePicker();

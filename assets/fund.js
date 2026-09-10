@@ -94,9 +94,9 @@ export function computeFund({ terms = [], dues = [], expenses = [], payments = [
   return { adminId, income, duesTotal, surplus, spent, balance, fundExpenses, reimburse, reimburseTotal, terms: termsOut, current, duesCount: dues.length };
 }
 
-/** "납부 x원 + 정산 귀속 y원 - 지출 z원" 한 줄(귀속이 없으면 빼고). */
+/** "납부 x원 + 정산 적립 y원 - 지출 z원" 한 줄(귀속이 없으면 빼고). */
 export function incomeLine(f) {
-  return `납부 ${fmtWon(f.duesTotal ?? f.income)}원${f.surplus ? ` + 정산 귀속 ${fmtWon(f.surplus)}원` : ""} - 지출 ${fmtWon(f.spent)}원`;
+  return `납부 ${fmtWon(f.duesTotal ?? f.income)}원${f.surplus ? ` + 정산 적립 ${fmtWon(f.surplus)}원` : ""} - 지출 ${fmtWon(f.spent)}원`;
 }
 
 /**
@@ -175,7 +175,7 @@ const statusTag = r => r.status === "paid" ? '<span class="tag ok">납부</span>
 export function renderFund(root, f, opt = {}) {
   const t = opt.termId ? f.terms.find(x => x.id === opt.termId) : f.current;
   if (!t && !f.duesCount && !f.fundExpenses.length) {
-    root.innerHTML = `<div class="empty">회비 설정 없음.${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#dues">관리 화면</a>에서 정하면 표시됨.' : ""}</div>`;
+    root.innerHTML = `<div class="empty">회비 설정 없음${opt.adminHint ? ' · <a href="' + esc(opt.adminHint) + '#dues">관리</a>에서 설정' : ""}</div>`;
     return;
   }
   const neg = f.balance < 0;
@@ -184,8 +184,8 @@ export function renderFund(root, f, opt = {}) {
       <div class="st-total${neg ? " neg" : ""}"><div class="lab">회비 잔액</div><b>${fmtWon(f.balance)}<small>원</small></b>
         <span>${incomeLine(f)}${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
       <div class="st-rule"><div class="lab">${t ? esc(t.name || "회비") : "회비 설정 없음"}</div>
-        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq" style="font-weight:500">입금 계좌: ${esc(t.account)} <button type="button" class="copy-btn" data-copy="${esc(accountNumber(t.account))}">번호 복사</button></div>` : ""}${t.note ? `<div class="secsub" style="margin:4px 0 0">${esc(t.note)}</div>` : ""}` : "회비 설정 없이 납부·지출만 합산."}
-        ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액을 넘음.</div>' : ""}</div>
+        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq" style="font-weight:500">입금 계좌: ${esc(t.account)} <button type="button" class="copy-btn" data-copy="${esc(accountNumber(t.account))}">번호 복사</button></div>` : ""}${t.note ? `<div class="secsub" style="margin:4px 0 0">${esc(t.note)}</div>` : ""}` : "회비 설정 없음 · 납부와 지출만 합산"}
+        ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액 초과</div>' : ""}</div>
     </div>`;
 
   const rows = t ? t.rows.map(r => `<tr${r.id === opt.me ? ' class="hl"' : ""}${r.status !== "paid" ? ' data-unpaid="1"' : ""}>
@@ -200,7 +200,7 @@ export function renderFund(root, f, opt = {}) {
   const pend = f.reimburse.filter(r => r.remaining > 0);
   const reimb = pend.length
     ? `<div class="lab" style="margin-top:16px">회비에서 보전할 돈</div><div class="st-transfers">${pend.map(r => `<div class="tr"><span>${fundLabel}</span><span class="arrow">→</span><span>${esc(r.name)}</span><span class="amt">${fmtWon(r.remaining)}원</span></div>`).join("")}</div>
-       <div class="secsub">대신 결제한 금액. 총무가 보내고 송금 기록에 남기면 사라짐.</div>`
+       <div class="secsub">대신 결제한 금액. 총무가 송금 후 기록하면 사라짐.</div>`
     : "";
 
   const others = f.terms.filter(x => x !== t);
@@ -247,7 +247,7 @@ export function renderSessionFund(root, { items = [], f = null, payments = [] })
   }
   root.innerHTML = `
     <div class="st-head">
-      <div class="st-total"><div class="lab">이 회차 회비 지출</div><b>${fmtWon(total)}<small>원</small></b><span>항목 ${items.length}건 · 참석자 개인 부담 없음</span></div>
+      <div class="st-total"><div class="lab">이 회차 회비 지출</div><b>${fmtWon(total)}<small>원</small></b><span>${items.length}건 · 개인 부담 없음</span></div>
       <div class="st-rule"><div class="lab">회비 잔액 (현재)</div>${f ? `<div class="eq${f.balance < 0 ? ' style="color:var(--danger)"' : ""}">${fmtWon(f.balance)}원</div>${incomeLine(f)}${f.current ? ` · ${esc(f.current.name || "")} ${esc(termPeriod(f.current))}` : ""}${budgetLine(f)}` : "잔액 불러오기 실패"}</div>
     </div>
     <div class="st-day"><div class="hd"><b>내역</b><span class="n">${items.length}건</span><span class="sum">${fmtWon(total)}원</span></div>${list}</div>

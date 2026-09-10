@@ -54,18 +54,18 @@
   <!-- 회비 -->
   <section data-tab="fund">
     <h2 class="tabh">회비 현황 <span class="cnt" id="fund-sub"></span></h2>
-    <p class="secsub">월별 가용 금액 안에서 쓰고, 덜 쓴 금액은 다음 달로 이월됨.</p>
+    <p class="secsub">월별 예산 안에서 사용. 잔액은 다음 달로 이월.</p>
     <div id="fund"><div class="empty">불러오는 중</div></div>
   </section>
 
   <!-- 일정·발제 -->
   <section data-tab="schedule">
     <h2 class="tabh">일정과 발제 <span class="cnt" id="sched-sub"></span></h2>
-    <p class="secsub">발제는 정한 순서대로 매월 한 명. 상호 합의 후 일정 변경 가능.</p>
+    <p class="secsub">발제는 순서대로 매월 1명. 일정 변경은 참석자 간 협의.</p>
     <div id="sched"><div class="empty">불러오는 중</div></div>
   </section>
 
-  <p class="foot">HR STUDY. 이름과 금액은 로그인한 멤버에게만 보임. <a href="demo/">화면 예시</a></p>
+  <p class="foot">HR STUDY · <a href="demo/">화면 예시</a></p>
 </div>
 
 <script type="module">
@@ -160,7 +160,7 @@
           <span>${s ? "확정 일정" : esc(ruleLabel(sch.meeting, false))}${when ? " · " + esc(when) : ""}</span></div>
         <div class="st-rule"><div class="lab">발제 ${status}</div>
           <div class="eq">${row.presenter ? esc(honor(memberName(row.presenter))) : "미정"}${row.fromSession ? ' <span class="tag">확정</span>' : ""}</div>
-          ${s ? `${esc(s.title || "제목 미정")}${s.page ? ` · <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}">기록 보기</a>` : ""}<br>참석 ${(s.attendees || []).length}명 · 의견 ${commentCount[s.id] || 0}개` : "세션 없음"}</div>
+          ${s ? `${esc(s.title || "제목 미정")}${s.page ? ` · <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}">기록 보기</a>` : ""}<br>참석 ${(s.attendees || []).length}명 · 의견 ${commentCount[s.id] || 0}개` : "등록된 모임 없음"}</div>
       </div>`;
 
     // 회비: 이달 배정·이월·지출·남은 금액
@@ -178,7 +178,7 @@
     const items = mx.length ? `<div class="lab" style="margin-top:18px">지출 내역</div>
       <div class="st-day"><div class="hd"><b>${esc(fmtMonth(m, "short"))}</b><span class="n">${mx.length}건</span><span class="sum">${fmtWon(tot)}원</span></div>
       ${mx.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category || "")}${isFund(x) ? "" : " · n분의 1"}</small></span><span class="by">${esc(memberName(x.paidBy))}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("")}</div>`
-      : `<div class="lab" style="margin-top:18px">지출 내역</div><div class="empty">지출 없음.</div>`;
+      : `<div class="lab" style="margin-top:18px">지출 내역</div><div class="empty">지출 없음</div>`;
 
     // 추가 비용 정산서
     const blocks = settleBlocks(ss);
@@ -213,13 +213,13 @@
     }
     $("#sum-notes").innerHTML = notes.length
       ? `<div class="lab" style="margin-top:16px">확인할 것</div><div class="rows">${notes.join("")}</div>`
-      : (cur ? '<div class="note ok" style="margin-top:16px">미납·정산 남은 것 없음.</div>' : "");
+      : (cur ? '<div class="note ok" style="margin-top:16px">미납과 남은 정산 없음</div>' : "");
 
     // 최근 모임 3개
     $("#sum-count").textContent = sessions.length ? `${sessions.length}회` : "";
     $("#sum-weeks").innerHTML = sessions.length
-      ? sessions.slice(0, 3).map(weekCard).join("") + (sessions.length > 3 ? `<div class="secsub" style="margin-top:6px"><a href="#" data-tab="months">월별 탭</a>에서 지난 모임을 달마다 볼 수 있음.</div>` : "")
-      : `<div class="empty">기록된 모임 없음.${isAdmin() ? ' <a href="admin.html#sessions">관리 화면</a>에서 세션을 만들면 표시됨.' : ""}</div>`;
+      ? sessions.slice(0, 3).map(weekCard).join("") + (sessions.length > 3 ? `<div class="secsub" style="margin-top:6px">지난 모임은 <a href="#" data-tab="months">월별 탭</a>에서.</div>` : "")
+      : `<div class="empty">기록된 모임 없음${isAdmin() ? ' · <a href="admin.html#sessions">관리</a>에서 세션 만들기' : ""}</div>`;
   }
 
   /* ---------- 시작 ---------- */
@@ -230,7 +230,7 @@
       const S = await import("./demo/sample.js");
       setMembers(S.MEMBERS); me = "a"; today = S.TODAY || today;
       sessions = S.SESSIONS; expenses = S.EXPENSES; payments = S.PAYMENTS; comments = S.COMMENTS; terms = S.TERMS; dues = S.DUES; settings = S.SETTINGS;
-      $("#note").innerHTML = '<div class="note">화면 예시. 이름과 금액은 가명이며 실제 데이터 아님.</div>';
+      $("#note").innerHTML = '<div class="note">화면 예시 · 이름과 금액은 가명</div>';
     } else {
       ({ me } = await ready());
       const [sSnap, eSnap, pSnap, cSnap, tSnap, dSnap, st] = await Promise.all([
