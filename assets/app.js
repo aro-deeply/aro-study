@@ -141,7 +141,7 @@ function showGate() {
     const g = el(`
       <div class="gate" id="gate">
         <form class="panel" autocomplete="on">
-          <div class="brand"><small>HR STUDY</small><b>모임 기록</b></div>
+          <div class="brand"><small>HR STUDY</small><b>로그인</b></div>
           <div class="field"><label for="gate-pw">비밀번호</label>
             <input id="gate-pw" type="password" name="password" autocomplete="current-password" placeholder="공용 비밀번호" required autofocus></div>
           <div class="err" id="gate-err"></div>
@@ -212,7 +212,7 @@ export function renderTopbar() {
   const me = memberById(getMe());
   bar.className = "topbar";
   bar.innerHTML = `<div class="in">
-    <a class="brand" href="${ROOT}"><small>HR STUDY</small><b>모임 기록</b></a>
+    <a class="brand" href="${ROOT}"><small>HR STUDY</small><b>홈</b></a>
     <div class="who">
       ${isAdmin(me) ? `<a class="link-btn" href="${ROOT}admin.html">관리</a>` : ""}
       <button class="me" type="button" title="이름 바꾸기">${esc(me?.name || "이름 선택")}</button>
