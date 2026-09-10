@@ -118,7 +118,7 @@ td.amt,th.amt{text-align:right;white-space:nowrap}
 
 /* 요약 통계 */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0 8px}
-.stat{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px 10px;background:var(--surface)}
+.stat{border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px 10px;background:var(--surface);min-width:0}
 .stat b{display:block;font-size:1.375rem;letter-spacing:-.02em;color:var(--accent-dark);font-weight:700;line-height:1.15;margin-bottom:4px;font-variant-numeric:tabular-nums}
 .stat span{font-size:.75rem;color:var(--muted);display:block;line-height:1.5}
 .stats.four{grid-template-columns:repeat(4,1fr)}
