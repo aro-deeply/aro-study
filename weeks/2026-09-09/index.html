@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FAFAF7">
+<link rel="manifest" href="/aro-study/manifest.json">
+<link rel="apple-touch-icon" href="/aro-study/assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/aro-study/assets/icons/icon-192.png">
+<title>HR, AI로 업무를 바꾸고 데이터로 판단하다 · HR STUDY</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body data-session="2026-09-09">
+<div id="topbar"></div>
+<div class="wrap">
+  <div class="kicker"><span>HR STUDY</span><span>WEEK 01</span></div>
+  <h1>HR, AI로 업무를 바꾸고 데이터로 판단하다</h1>
+  <p class="sub meta-line">2026.09.09 (수) · 참석 <span id="attendees" class="muted">불러오는 중</span><span id="presenter-wrap" class="hidden"> · 발제 <span id="presenter"></span></span></p>
+
+  <h2><em>1</em>이날의 내용</h2>
+  <div class="doc" id="content">
+<h3>운영 방식을 정했다</h3>
+<p>첫 모임(OT)에서 앞으로의 운영 틀을 정했다. 정기 모임은 매월 둘째 수요일 저녁이고, 사정이 있으면 서로 합의해 날짜를 옮긴다. 발제는 정한 순서대로 매월 한 명이 맡는다. 순서와 달마다의 발제자는 홈의 "일정·발제" 탭에서 본다.</p>
+<p>회비는 1인 5만 원을 걷어 6개월 동안 나눠 쓴다. 매월 쓸 수 있는 금액을 정해 두고, 덜 쓴 만큼은 다음 달로 넘긴다. 회비 밖에서 나눠 낼 비용은 총액을 참석 인원으로 나눠 100원 단위로 올리고, 그 차액은 회비로 넣는다. 이날 비용은 OT 성격이라 참석자가 나눠 내기로 했고, 1월부터 합류하는 멤버의 회비는 그때 걷는다.</p>
+<div class="box"><div class="lab">정리</div><p>매월 둘째 수요일, 발제는 순서대로 한 명, 회비는 6개월 분할 사용. 세부 숫자와 정산은 아래 "비용"과 홈의 회비 탭에서 확인.</p></div>
+
+<h3>발제: HR, AI로 업무를 바꾸고 데이터로 판단하다</h3>
+<p>이날 발제와 토론에서 오간 내용은 아직 정리 전이다. 메모가 모이면 이 자리에 채운다. 같은 날 공개된 아래 브리프가 같은 주제를 다룬다.</p>
+<a class="brief-link" href="https://aro-deeply.github.io/aro-briefs/briefs/2026-09-09-work-redesign/" target="_blank" rel="noopener">
+  <span class="k">CASE BRIEF 03</span><span class="t">AI 도입 뒤의 문제는 '더 잘 쓰는 법'이 아니라 일을 그대로 둔 채 AI만 얹었다는 데 있을 수 있다</span><span class="go">브리프 열기</span></a>
+  </div>
+  <!-- 관련 브리프가 있으면 위 CONTENT 안에 아래 카드 형식으로 넣는다.
+  <a class="brief-link" href="https://aro-deeply.github.io/aro-briefs/briefs/YYYY-MM-DD-slug/" target="_blank" rel="noopener">
+    <span class="k">CASE BRIEF 00</span><span class="t">브리프 제목</span><span class="go">브리프 열기</span></a>
+  -->
+
+  <h2><em>2</em>다음 모임 계획</h2>
+  <div class="q" id="next-plan"><div class="lab">NEXT</div><p>10월 7일(수) 오후 7시, 코엑스 노타AI. 발제는 순서 1번.</p></div>
+
+  <h2><em>3</em>비용</h2>
+  <div id="settle"></div>
+
+  <h2><em>4</em>의견 <span class="cnt" id="comment-count"></span></h2>
+  <div id="comments"><div class="empty">의견 불러오는 중</div></div>
+
+  <p class="foot">HR STUDY. 이름과 금액은 로그인한 멤버에게만 보임. <a href="../../">홈으로</a></p>
+</div>
+
+<script type="module">
+  import { ready, esc, memberName, honor, fmtDate, $ } from "../../assets/app.js";
+  import { mountSettlement } from "../../assets/settle.js";
+  import { mountReader, mountComments } from "../../assets/reader.js";
+
+  const sessionId = document.body.dataset.session || location.pathname.split("/").filter(Boolean).slice(-1)[0];
+  const { me } = await ready();
+  mountComments({ sessionId, me, root: $("#comments"), countEl: $("#comment-count") });
+  mountReader({ sessionId, me, root: $("#content") });
+  const data = await mountSettlement($("#settle"), sessionId, { adminHint: "../../admin.html" });
+  const s = data?.session;
+  const att = $("#attendees");
+  if (s?.attendees?.length) { att.textContent = s.attendees.map(memberName).join(", ") + ` (${s.attendees.length}명)`; att.className = ""; }
+  else att.textContent = s ? "미정" : "세션 정보 없음";
+  if (s?.presenter) { $("#presenter").textContent = honor(memberName(s.presenter)); $("#presenter-wrap").classList.remove("hidden"); }
+  // 정적 계획이 비어 있으면 Firestore의 nextPlan을 보여 준다.
+  const np = $("#next-plan p");
+  if (np && !np.textContent.trim() && s?.nextPlan) np.textContent = s.nextPlan;
+  document.addEventListener("aro:me", () => location.reload());
+</script>
+</body></html>
