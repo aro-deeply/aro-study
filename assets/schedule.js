@@ -116,19 +116,13 @@ const statusTag = st => st === "next" ? '<span class="tag">다음</span>' : st =
  * @param {{me?: string, adminHint?: string, nextPlan?: string}} opt
  */
 export function renderSchedule(root, sch, opt = {}) {
-  const { rows, next, meeting: m, rotation: r } = sch;
-  // 세션에 시간·장소가 있으면(확정 일정) 규칙의 기본값보다 우선
-  const place = [next?.session?.time || m.time, next?.session?.place || m.place].filter(Boolean).join(" · ");
-  const nextName = next?.presenter ? honor(memberName(next.presenter)) : "미정";
+  const { rows, meeting: m, rotation: r } = sch;
+  // 다음 모임은 아래 표의 "다음" 행이 보여 주므로, 여기에는 규칙 요약만 둔다.
   const head = `
-    <div class="st-head">
-      <div class="st-total"><div class="lab">다음 모임</div>
-        <b>${next ? fmtDate(next.date, "short") : "미정"}</b>
-        <span>${next?.session ? "확정 일정" : esc(ruleLabel(m, false))}${place ? " · " + esc(place) : ""}</span></div>
-      <div class="st-rule"><div class="lab">${next ? fmtMonth(next.ym, "short") + " 발제" : "발제"}</div>
-        <div class="eq">${esc(nextName)}${next?.fromSession ? ' <span class="tag">확정</span>' : ""}</div>
-        ${r.order.length ? `순서 ${next?.index || "-"}/${r.order.length} · ${esc(fmtMonth(r.startMonth))}부터` : "발제 순서 없음" + (opt.adminHint ? ` · <a href="${esc(opt.adminHint)}#schedule">관리</a>에서 설정` : "")}
-        ${opt.nextPlan ? `<div class="eq" style="font-weight:500;margin-top:6px">${esc(opt.nextPlan)}</div>` : ""}</div>
+    <div class="st-rule sched-rule">
+      <div class="eq clip">${esc(ruleLabel(m))}${m.place ? " · " + esc(m.place) : ""}</div>
+      ${r.order.length ? `발제 순서 ${r.order.length}명 · ${esc(fmtMonth(r.startMonth))}부터` : "발제 순서 없음" + (opt.adminHint ? ` · <a href="${esc(opt.adminHint)}#schedule">관리</a>에서 설정` : "")}
+      ${opt.nextPlan ? `<div style="margin-top:4px">${esc(opt.nextPlan)}</div>` : ""}
     </div>`;
   const table = `<table class="stack sched"><thead><tr><th>월</th><th>모임일</th><th>발제</th><th>상태</th></tr></thead><tbody>${rows.map(x => `
     <tr${x.status === "next" ? ' class="hl"' : ""}${x.presenter === opt.me ? ' data-me="1"' : ""}>

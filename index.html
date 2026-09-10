@@ -41,9 +41,8 @@
   <div id="note"></div>
   <div id="loading">불러오는 중<span class="slow">연결이 느립니다 · 잠시 기다리거나 새로고침</span></div>
 
-  <div class="stats two" id="stats">
+  <div class="stats one" id="stats">
     <div class="stat"><b class="soft">…</b><span>다음 모임</span></div>
-    <div class="stat"><b class="soft">…</b><span>발제</span></div>
   </div>
 
   <div class="tabs" id="tabs">
@@ -203,13 +202,16 @@
   /* ---------- 요약 ---------- */
   function renderSummary() {
     const cur = f.current, unpaid = cur ? cur.unpaid : [];
-    const latest = sessions[0];
-    const nextPlan = latest?.nextPlan ? latest.nextPlan.split("\n")[0] : "";
     const nx = sch.next;
-    const whenNext = nx?.session ? "확정" + [nx.session.time || sch.meeting.time, nx.session.place || sch.meeting.place].filter(Boolean).map(v => " · " + esc(v)).join("") : esc(ruleLabel(sch.meeting));
+    const t = nx?.session?.time || sch.meeting.time;
+    const place = nx?.session?.place || sch.meeting.place;
+    const name = nx?.presenter ? honor(memberName(nx.presenter)) : "";
+    const parts = nx?.session
+      ? [name && `발제 ${name}`, place].filter(Boolean)
+      : [ruleLabel(sch.meeting, false), name && `발제 ${name}`].filter(Boolean);
     statsEl.innerHTML = `
-      <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${whenNext}${nextPlan && !nx?.session ? "<br>" + esc(nextPlan) : ""}</span></div>
-      <div class="stat"><b>${nx?.presenter ? esc(honor(memberName(nx.presenter))) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>`;
+      <div class="stat"><b>${nx ? fmtDate(nx.date, "short") + (t ? " " + esc(t) : "") : "미정"}</b>
+        <span class="clip">다음 모임${parts.length ? " · " + parts.map(esc).join(" · ") : ""}</span></div>`;
 
     // 확인할 것: 미납, 보전할 돈, 남은 정산. 제목 / 세부 / 링크를 나눠 한 줄씩.
     const item = (title, detail, link, warn) => `<div class="rowi${warn ? " unpaid" : ""}"><div class="main">${title}<small>${detail}</small></div><span class="ops">${link}</span></div>`;
@@ -271,7 +273,7 @@
     window.__fund = f; window.__r = r; window.__sched = sch;
 
     renderSummary();
-    $("#sched-sub").textContent = ruleLabel(sch.meeting);
+    $("#sched-sub").textContent = "";
     renderSchedule($("#sched"), sch, { me, adminHint: isAdmin() ? "admin.html" : "", weekHref: s => DEMO ? "demo/" : `weeks/${s.id}/` });
     $("#fund-sub").textContent = f.current ? `${f.current.name || ""} ${fmtWon(f.balance)}원 남음`.trim() : "";
     renderFund($("#fund"), f, { me, adminHint: isAdmin() ? "admin.html" : "" });

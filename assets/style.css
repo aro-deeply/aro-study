@@ -123,6 +123,9 @@ td.amt,th.amt{text-align:right;white-space:nowrap}
 .stat span{font-size:.75rem;color:var(--muted);display:block;line-height:1.5}
 .stats.four{grid-template-columns:repeat(4,1fr)}
 .stats.two{grid-template-columns:1fr 1fr;margin-top:4px}
+.stats.one{grid-template-columns:1fr;margin-top:4px}
+.clip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sched-rule{margin:0 0 12px}
 @media (max-width:560px){.stats.two{grid-template-columns:1fr}.stats.two .stat:last-child{grid-column:auto}}
 @media (max-width:560px){.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:1/-1}.stats.four .stat:last-child{grid-column:auto}}
 @media (max-width:760px){.stats.four{grid-template-columns:1fr 1fr}}
