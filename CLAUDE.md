@@ -17,6 +17,8 @@ HR 스터디 모임의 주차별 기록·회비 관리·의견 사이트. GitHub
 - 멤버 이름·금액·의견·참석자·발제 순서·하이라이트는 전부 Firestore(`members`, `settings`, `terms`, `dues`, `sessions`, `expenses`, `payments`, `comments`, `annotations`, `resources`). HTML에 하드코딩하지 않는다.
 - 운영 방식(2026-09-09): 회비를 걷어 회비에서 지출(`expenses.source: "fund"`, 기본값). 회비 밖 추가 비용만 `source: "split"`으로 참석자 n분의 1. `payments.from`이 `"fund"`면 회비에서 개인에게 보전한 송금. 자세한 것은 SPEC 3-1.
 - 2026-09-10 추가: 정기 모임은 매월 둘째 수요일(`settings/meeting`), 발제는 `settings/rotation` 순서대로 매월 한 명(세션 `presenter`가 있으면 우선, 화면에는 "이름 님"), 회비는 `terms.months`로 나눈 월별 가용 금액과 이월(월 배정 100원 단위 올림, 마지막 달이 적음). n분의 1은 100원 단위 올림이고 차액은 회비 적립(`computeSettlement().surplus` → `computeFund({ splitSurplus })`). SPEC 3-1, 3-2.
+- 2026-09-10 추가 2: 공지는 `settings/notice`(`{ text, until }`). 내용이 있고 until이 지나지 않았으면 첫 화면 `#note` 배너로만 표시, 없으면 아무것도 안 보인다. 입력은 admin 일정·발제 탭. SPEC 참고.
+- 카톡 공유 썸네일: `assets/og-image.png`(1200x630)와 각 페이지 head의 Open Graph 태그. 주차 템플릿은 `{{TITLE}}` 등이 OG 태그에도 치환된다. 디자인 원본과 재렌더 방법은 `scripts/og-image.html` 주석 참고. 이미지 교체 후에는 카카오 공유 디버거에서 캐시 초기화가 필요하다.
 - 운영 데이터를 한 번에 넣을 때는 `scripts/setup.mjs <json>`(JSON은 저장소 밖 `../work/aro-study/`에 둔다, 총무 비밀번호는 실행 중 입력).
 - 세션 ID = 모임 날짜(YYYY-MM-DD) = 주차 폴더명.
 - Firestore 쿼리는 복합 인덱스가 필요 없게 `where` 하나만 쓰고 정렬은 클라이언트에서 한다. 인덱스 오류가 나면 콘솔 링크를 사용자에게 안내한다.
@@ -24,6 +26,14 @@ HR 스터디 모임의 주차별 기록·회비 관리·의견 사이트. GitHub
 ## 새 주차 기록
 
 `.claude/skills/aro-study-week/SKILL.md` 순서를 따른다. 보조 도구: `scripts/new_week.py`(템플릿 복제), `scripts/check_week.py`(규칙 점검), `scripts/session.mjs`(Firestore 세션 등록, 총무 비밀번호는 실행 중 입력).
+
+## 화면 문구 원칙 (2026-09-10)
+
+- 같은 단어·같은 정보를 한 화면에 두 번 보여주지 않는다. 예: 잔액을 부제와 카드에 중복 표기, 탭 이름을 바로 아래 제목으로 반복, 표의 태그와 같은 내용의 하단 배너.
+- "확정" 같은 상태 단어는 쓰지 않는다. 시간·장소를 그냥 보여주면 된다.
+- 예정 모임 카드의 빈 제목은 "주제 미정"("다음 모임" 금지, 상단 박스와 겹친다).
+- 첫 화면 상단은 한 박스: 날짜·시간 크게, 아래 한 줄(발제·장소)은 말줄임. 일정·발제 탭 상단은 규칙 요약 박스만(다음 모임 정보는 표의 "다음" 행이 담당).
+- 그리드·플렉스 아이템 안에 말줄임(`.clip`) 텍스트를 둘 때는 아이템에 `min-width:0`이 있는지 확인한다(카드가 화면 밖으로 밀리는 버그의 원인).
 
 ## 하지 말 것
 

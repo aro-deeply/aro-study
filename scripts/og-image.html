@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<!--
+  카톡 공유 썸네일(assets/og-image.png)의 디자인 원본. 1200x630.
+  수정 후 재렌더링: 이 파일을 브라우저로 열어 1200x630으로 캡처하거나,
+  Playwright로: page.set_viewport_size 1200x630, 폰트 로딩(document.fonts.status === 'loaded') 대기 후 screenshot.
+  결과를 assets/og-image.png로 저장하고 커밋. 카카오 캐시는 https://developers.kakao.com/tool/debugger/sharing 에서 초기화.
+-->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;800;900&display=swap">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  body{
+    font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+    background:#101214;color:#F5F6F4;
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:56px 72px;
+  }
+  .top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2A2D31;padding-bottom:22px}
+  .top .l{font-size:18px;font-weight:800;letter-spacing:.26em}
+  .top .r{font-size:16px;font-weight:500;letter-spacing:.22em;color:#7A7F86}
+  h1{font-size:104px;font-weight:900;line-height:1.16;letter-spacing:-.03em}
+  h1 span{color:#D8F34E}
+  .bottom{display:flex;align-items:center;gap:20px}
+  .bar{width:88px;height:6px;background:#D8F34E}
+  .est{font-size:16px;font-weight:500;letter-spacing:.22em;color:#7A7F86}
+</style></head>
+<body>
+  <div class="top">
+    <div class="l">HR STUDY</div>
+    <div class="r">MONTHLY ARCHIVE</div>
+  </div>
+  <h1>
+    <div>조직과 사람을</div>
+    <div>읽고<span>,</span> 질문하고<span>,</span> 나누다</div>
+  </h1>
+  <div class="bottom">
+    <div class="bar"></div>
+    <div class="est">EST. 2026</div>
+  </div>
+</body></html>
