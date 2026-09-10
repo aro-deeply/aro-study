@@ -132,8 +132,8 @@ export function renderSettlement(root, r, opt = {}) {
     return;
   }
   const rule = r.uniform && r.n
-    ? `참석 ${r.n}명 균등 · 100원 단위 올림 · 차액은 회비 적립<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원${r.surplus ? ` (${fmtWon(r.surplus)}원 적립)` : ""}</div>`
-    : `분배 대상이 같은 항목끼리 균등 · 100원 단위 올림 · 차액${r.surplus ? ` ${fmtWon(r.surplus)}원` : ""}은 회비 적립`;
+    ? `참석 ${r.n}명 균등 · 100원 단위 올림<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원</div>`
+    : `분배 대상이 같은 항목끼리 균등 · 100원 단위 올림`;
 
   const people = r.people.map(p => `
     <div class="st-person${p.isAdmin ? " is-admin" : ""}">
@@ -178,8 +178,8 @@ export function renderSettlement(root, r, opt = {}) {
     <div class="st-people">${people}${surplusCard}</div>
     ${r.categories.length ? `<div class="lab">카테고리</div><div class="st-catbar">${bar}</div><div class="st-cats">${cats}</div>` : ""}
     <div class="lab">상세 내역</div>${days}
-    ${r.surplus && r.adminId ? `<div class="secsub" style="margin-top:14px">차액 ${fmtWon(r.surplus)}원은 ${fundLabel}에 적립. 총무 부담액은 다른 멤버와 동일.</div>` : ""}
-    <div class="st-check${bad ? " bad" : ""}">${checkLine}</div>`;
+    ${r.surplus && r.adminId ? `<div class="secsub" style="margin-top:14px">차액 ${fmtWon(r.surplus)}원은 ${fundLabel}에 적립.</div>` : ""}
+    ${bad ? `<div class="st-check bad">${checkLine}</div>` : ""}`;
 }
 
 /* ---------- Firestore 연결 ---------- */

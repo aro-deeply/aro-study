@@ -293,7 +293,9 @@ input[type=file]{width:100%;font-size:.875rem;padding:8px 0}
 .res-form textarea{min-height:72px}
 .res-form .actions{justify-content:flex-end}
 /* 복사 버튼(계좌번호 등) */
-.copy-btn{font:inherit;font-size:.75rem;font-weight:600;color:var(--accent-dark);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:1px 10px;margin-left:8px;cursor:pointer;vertical-align:middle}
+.eq.acct{display:flex;align-items:center;gap:8px;font-weight:500}
+.eq.acct span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.copy-btn{font:inherit;font-size:.75rem;font-weight:600;color:var(--accent-dark);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:1px 10px;cursor:pointer;vertical-align:middle;flex:0 0 auto;white-space:nowrap}
 .copy-btn:hover{border-color:var(--accent)}
 
 /* ---------- 10. 하이라이트·메모 (aro-briefs reader) ---------- */

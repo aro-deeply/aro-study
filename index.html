@@ -259,7 +259,7 @@
     sessionsById = Object.fromEntries(sessions.map(s => [s.id, s]));
     r = computeSettlement({ expenses, payments, sessionsById, members: members() });
     f = computeFund({ terms, dues, expenses, payments, members: members(), today, splitSurplus: r.surplus });
-    sch = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 12 });
+    sch = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 12, untilEnd: true });
     window.__fund = f; window.__r = r; window.__sched = sch;
 
     renderSummary();

@@ -76,7 +76,7 @@
   document.getElementById("settle-split").innerHTML = '<div class="lab" style="margin-top:22px">추가 비용 (참석자 n분의 1)</div><div id="settle-split-in"></div>';
   renderSettlement(document.getElementById("settle-split-in"), r, { payments: P1, subtitle: "2026.09.09 (수)", totalLabel: "추가 비용" });
   renderFund(document.getElementById("fund"), f, { me: ME, adminHint: "../admin.html" });
-  const sch = computeSchedule({ meeting: SETTINGS.meeting, rotation: SETTINGS.rotation, sessions: SESSIONS, today: TODAY, months: 12 });
+  const sch = computeSchedule({ meeting: SETTINGS.meeting, rotation: SETTINGS.rotation, sessions: SESSIONS, today: TODAY, months: 12, untilEnd: true });
   window.__sched = sch;
   renderSchedule(document.getElementById("sched"), sch, { me: ME, nextPlan: SESSIONS[0].nextPlan, weekHref: () => "./" });
 

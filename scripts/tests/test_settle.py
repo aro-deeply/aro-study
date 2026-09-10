@@ -81,7 +81,7 @@ check("sched next date", sch["next"]["date"], "2026-11-11")
 check("sched next presenter (c = 3/5)", (sch["next"]["presenter"], sch["next"]["index"]), ("c", 3))
 by = {r["ym"]: r for r in sch["rows"]}
 check("sched oct uses session date/presenter", (by["2026-10"]["date"], by["2026-10"]["presenter"], by["2026-10"]["fromSession"], by["2026-10"]["status"]), ("2026-10-14", "b", True, "done"))
-check("sched rotation wraps (2027-02 -> a)", by["2027-02"]["presenter"], "a")
+check("sched rotation ends (2027-02 -> none)", by.get("2027-02", {}).get("presenter", ""), "")
 check("sched 2027-01 2nd wednesday", by["2027-01"]["date"], "2027-01-13")
 check("sched dec 2nd wednesday", by["2026-12"]["date"], "2026-12-09")
 print("--- console ---")
