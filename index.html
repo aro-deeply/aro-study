@@ -168,7 +168,7 @@
     const fundBox = br
       ? `<div class="lab" style="margin-top:18px">회비 (${esc(f.current.name || "회비")})</div>
          <div class="stats mini"><div class="stat"><b>${fmtWon(br.alloc)}${won}</b><span>배정</span></div><div class="stat"><b>${fmtWon(br.carried)}${won}</b><span>이월</span></div><div class="stat"><b>${fmtWon(br.spent)}${won}</b><span>회비 지출</span></div><div class="stat"><b${br.remaining < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(br.remaining)}${won}</b><span>남은 금액</span></div></div>`
-      : `<div class="lab" style="margin-top:18px">회비</div><div class="secsub">${b ? `회비 기간(${esc(fmtMonth(b.startYm, "short"))}~${esc(fmtMonth(b.endYm))}) 밖.` : "회비 설정 없음."}</div>`;
+      : `<div class="lab" style="margin-top:18px">회비</div><div class="secsub">${b ? `회비 사용 기간 아님 (${esc(fmtMonth(b.startYm))} ~ ${esc(fmtMonth(b.endYm))})` : "회비 설정 없음."}</div>`;
     const mDues = dues.filter(d => ym(d.date) === m).sort((a, b2) => (a.date || "").localeCompare(b2.date || ""));
     const duesLine = mDues.length ? `<div class="secsub">이달 납부 ${mDues.length}건 · ${fmtWon(mDues.reduce((a, d) => a + (Number(d.amount) || 0), 0))}원: ${mDues.map(d => esc(memberName(d.memberId))).join(", ")}</div>` : "";
 
