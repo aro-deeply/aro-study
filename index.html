@@ -24,7 +24,6 @@
 </head><body>
 <div id="topbar"></div>
 <div class="wrap">
-  <div class="kicker"><span>HR STUDY</span><span>HOME</span></div>
   <div id="note"></div>
 
   <div class="stats two" id="stats">
@@ -193,6 +192,7 @@
     const latest = sessions[0];
     const nextPlan = latest?.nextPlan ? latest.nextPlan.split("\n")[0] : "";
     const nx = sch.next;
+    const whenNext = nx?.session ? "확정" + [nx.session.time || sch.meeting.time, nx.session.place || sch.meeting.place].filter(Boolean).map(v => " · " + esc(v)).join("") : esc(ruleLabel(sch.meeting));
     statsEl.innerHTML = `
       <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${whenNext}${nextPlan && !nx?.session ? "<br>" + esc(nextPlan) : ""}</span></div>
       <div class="stat"><b>${nx?.presenter ? esc(honor(memberName(nx.presenter))) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>`;

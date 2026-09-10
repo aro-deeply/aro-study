@@ -212,7 +212,7 @@ export function renderTopbar() {
   const me = memberById(getMe());
   bar.className = "topbar";
   bar.innerHTML = `<div class="in">
-    <a class="brand" href="${ROOT}"><small>HR STUDY</small><b>홈</b></a>
+    <a class="brand" href="${ROOT}"><b class="solo">HR STUDY</b></a>
     <div class="who">
       ${isAdmin(me) ? `<a class="link-btn" href="${ROOT}admin.html">관리</a>` : ""}
       <button class="me" type="button" title="이름 바꾸기">${esc(me?.name || "이름 선택")}</button>
