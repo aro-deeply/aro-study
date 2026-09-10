@@ -1,12 +1,13 @@
 /* scripts 공용: Firebase REST API로 Firestore를 읽고 쓰는 최소 도구 (Node 18+, 추가 설치 없음).
-   비밀번호는 환경변수 ARO_STUDY_PW 또는 실행 중 입력(화면에 표시되지 않음)으로 받고 어디에도 저장하지 않는다. */
+   관리 데이터를 쓰므로 총무 계정(ADMIN_EMAIL)으로 로그인한다. 비밀번호는 환경변수 ARO_STUDY_PW 또는
+   실행 중 입력(화면에 표시되지 않음)으로 받고 어디에도 저장하지 않는다. */
 import path from "node:path";
 import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cfgMod = await import(path.join(here, "..", "..", "assets", "firebase-config.js").replace(/\\/g, "/").replace(/^([A-Za-z]):/, "file:///$1:"));
-export const cfg = cfgMod.default, EMAIL = cfgMod.LOGIN_EMAIL;
+export const cfg = cfgMod.default, EMAIL = cfgMod.ADMIN_EMAIL;
 export const BASE = `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents`;
 
 /* ---------- 비밀번호 ---------- */
@@ -14,7 +15,7 @@ export async function askPassword() {
   if (process.env.ARO_STUDY_PW) return process.env.ARO_STUDY_PW;
   return new Promise(res => {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    process.stdout.write("공용 계정 비밀번호: ");
+    process.stdout.write("총무 비밀번호: ");
     const stdin = process.stdin; let pw = "";
     if (stdin.isTTY) stdin.setRawMode(true);
     stdin.resume(); stdin.setEncoding("utf8");
@@ -86,5 +87,10 @@ export async function addDocTo(t, col, fields) { return fromDoc(await api(t, "PO
 /** 로그인해서 토큰을 돌려준다. 실패하면 메시지를 찍고 종료. */
 export async function login() {
   try { return await signIn(await askPassword()); }
-  catch (ex) { console.error(ex.message); process.exit(1); }
+  catch (ex) {
+    console.error(ex.message);
+    process.exitCode = 1;
+    await new Promise(r => setTimeout(r, 200)); // Windows Node에서 fetch 직후 즉시 exit 하면 libuv 단언 오류가 나서 잠깐 기다린다
+    process.exit(1);
+  }
 }

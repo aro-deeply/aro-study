@@ -206,7 +206,7 @@
 <script type="module">
 import {
   ready, db, ROOT, $, $$, esc, el, toast, fmtWon, fmtDate, todayStr,
-  loadMembers, members, activeMembers, memberName, memberById, isAdmin, getMe, renderTopbar,
+  loadMembers, members, activeMembers, memberName, memberById, isAdmin, getMe, renderTopbar, requireAdminAuth, adminLogout,
   collection, doc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, orderBy, serverTimestamp
 } from "./assets/app.js";
 import { computeFund, partyName, termPeriod, FUND_ID } from "./assets/fund.js";
@@ -220,7 +220,12 @@ if (members().length && !isAdmin()) {
   guard.innerHTML = `<div class="note warn">총무 전용 화면. 상단에서 총무 이름을 선택하거나 <a href="${ROOT}">홈으로</a>.</div>`;
   document.addEventListener("aro:me", () => location.reload());
 } else {
-  if (!members().length) guard.innerHTML = `<div class="note">멤버 없음. 본인을 "총무" 체크와 함께 추가한 뒤 상단에서 이름 선택.</div>`;
+  // 총무 이름을 골랐어도 실제 쓰기 권한은 총무 계정 로그인이 있어야 한다(Firestore 규칙). 기기당 한 번.
+  await requireAdminAuth();
+  guard.innerHTML = members().length
+    ? `<div class="help" style="text-align:right;margin:-6px 0 10px">총무 계정으로 접속 중 · <button class="link-btn" type="button" id="admin-out">로그인 해제</button></div>`
+    : `<div class="note">멤버 없음. 본인을 "총무" 체크와 함께 추가한 뒤 상단에서 이름 선택.</div>`;
+  $("#admin-out")?.addEventListener("click", () => { if (confirm("총무 로그인을 해제할까요? 관리 화면에 다시 들어올 때 비밀번호를 묻습니다.")) adminLogout(); });
   $("#app").classList.remove("hidden");
   init();
 }

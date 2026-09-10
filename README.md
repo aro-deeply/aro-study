@@ -4,18 +4,18 @@ HR 스터디 모임의 주차별 기록, 회비 관리(납부·잔액), 멤버 �
 GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 빌드 도구가 없다.
 
 - 사이트: https://aro-deeply.github.io/aro-study/
-- 화면 예시(로그인 없음, 가명 데이터): https://aro-deeply.github.io/aro-study/demo/
+- 화면 예시(가명 데이터): https://aro-deeply.github.io/aro-study/demo/
 - 총무 관리: https://aro-deeply.github.io/aro-study/admin.html
 
 ## 처음 쓰기
 
-1. 사이트를 열고 공용 비밀번호를 입력한다. 이후 같은 기기에서는 다시 묻지 않는다.
+1. 사이트를 연다. 멤버는 비밀번호가 없다(Firebase 익명 로그인이 자동으로 된다). 총무만 관리 화면에서 비밀번호를 한 번 넣는다.
 2. "이름 선택"에서 본인을 고른다. 상단 오른쪽 이름을 누르면 바꿀 수 있다.
 3. 핸드폰에서는 브라우저 메뉴의 "홈 화면에 추가"로 앱처럼 쓸 수 있다.
 
 ## 총무가 하는 일
 
-- 최초 1회: Firebase 콘솔 > Firestore Database > 규칙 탭에 `firestore.rules` 내용을 붙여 넣고 게시한다.
+- 최초 1회: Firebase 콘솔 > Firestore Database > 규칙 탭에 `firestore.rules`, Storage > 규칙 탭에 `storage.rules` 내용을 붙여 넣고 게시한다. Authentication > Sign-in method 에서 "익명"과 "이메일/비밀번호"를 켜고 총무 계정을 만든다.
 - admin.html에서 멤버 등록(본인은 "총무" 체크), 회비 회비 설정 만들기와 납부 처리, 모임 세션 생성, 지출 입력(영수증 보고 바로, 기본은 "회비에서"), 송금 기록.
 - 모임 후 기록 페이지는 Claude Code에서 `.claude/skills/aro-study-week/SKILL.md` 절차로 만든다. 메모를 주면 `weeks/<날짜>/index.html`을 만들고 세션을 등록하고 푸시한다.
 
@@ -23,7 +23,7 @@ GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 
 
 - `index.html`: 상단 요약 카드(다음 모임·발제·회비 잔액·이달 가용) + 탭 4개. 요약(다음 모임, 확인할 것, 최근 모임), 월별(달을 골라 모임·회비·지출·정산을 한 화면에), 회비(잔액·월별 가용 금액·납부 표·보전할 돈), 일정·발제(12개월 표·발제 순서). 해시 `#months/YYYY-MM`로 특정 달을 바로 연다.
 - `weeks/<날짜>/`: 이날의 내용, 다음 모임 계획, 비용(이 회차 회비 지출과 현재 잔액, 추가 비용이 있으면 n분의 1 정산서), 의견(답글 1단계), 본문 하이라이트·메모(내 것만/전체, AI용 복사).
-- `admin.html`: 총무 권한 이름으로 들어왔을 때만 열린다.
+- `admin.html`: 총무 권한 이름 + 총무 비밀번호로만 열린다. 관리 데이터 쓰기는 Firestore 규칙에서 총무 계정만 허용한다.
 
 ## 회비와 정산 규칙
 
@@ -48,4 +48,4 @@ scripts/  new_week.py  check_week.py  session.mjs  setup.mjs  lib/firestore.mjs 
 
 - 로컬 확인: `python -m http.server 8770` 후 `http://127.0.0.1:8770/` (file:// 로는 ES 모듈이 동작하지 않음).
 - 테스트: Playwright 설치 후 `python scripts/tests/test_settle.py`, `python scripts/tests/test_reader.py`.
-- 비밀번호는 저장소 어디에도 두지 않는다. 노출됐다면 Firebase 콘솔 > Authentication에서 바꾼다.
+- 멤버 비밀번호가 없으므로 사이트 주소는 멤버에게만 알린다. 총무 비밀번호 등 비밀은 저장소 어디에도 두지 않는다. 노출됐다면 Firebase 콘솔 > Authentication에서 바꾼다.

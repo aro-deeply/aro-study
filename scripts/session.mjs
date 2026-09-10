@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /* Firestore sessions 문서를 터미널에서 등록·수정하는 도구 (Node 18+, 추가 설치 없음).
-   Firebase REST API를 직접 호출한다(scripts/lib/firestore.mjs). 비밀번호는 환경변수 ARO_STUDY_PW 또는 실행 중 입력(화면에 표시되지 않음)으로 받고 어디에도 저장하지 않는다.
+   Firebase REST API를 직접 호출한다(scripts/lib/firestore.mjs). 관리 데이터를 쓰므로 총무 비밀번호를 실행 중 묻는다(환경변수 ARO_STUDY_PW로 대신 가능). 어디에도 저장하지 않는다.
 
    사용:
      node scripts/session.mjs members

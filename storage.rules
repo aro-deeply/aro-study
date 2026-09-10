@@ -1,12 +1,16 @@
 rules_version = '2';
-// Firebase 콘솔 > Storage > 규칙 탭에 붙여 넣는 용도 (CLI 배포 안 함).
-// 로그인한 사람만 읽고 올린다. 관련 자료 첨부는 resources/<세션>/<파일> 경로, 20MB 이하.
+// Firebase 콘솔 > Storage > 규칙 탭에 붙여 넣는 용도 (CLI 배포 안 함). 2026-09-10 기준.
+// 접속(익명 포함)한 사람은 읽고 올릴 수 있다(resources/<세션>/<파일>, 20MB 이하, 올릴 때 metadata.uid에 접속 uid를 넣는다).
+// 지우는 것은 올린 본인(같은 uid) 또는 총무 계정만.
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.email == "aro.deeply@gmail.com"; }
     match /resources/{sessionId}/{file} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.resource.size < 20 * 1024 * 1024;
-      allow delete: if request.auth != null;
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.size < 20 * 1024 * 1024 && request.resource.metadata.uid == request.auth.uid;
+      allow update: if false;
+      allow delete: if isAdmin() || (signedIn() && resource.metadata.uid == request.auth.uid);
     }
   }
 }

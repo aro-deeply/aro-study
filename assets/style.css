@@ -45,8 +45,6 @@ img{max-width:100%;display:block}
 .topbar .who{display:flex;align-items:center;gap:6px;font-size:.8125rem;color:var(--muted)}
 .topbar .who .me{font:inherit;font-weight:700;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px 12px;cursor:pointer}
 .topbar .who .me:hover{border-color:var(--accent);color:var(--accent-dark)}
-.topbar .who .out{font:inherit;font-size:.75rem;color:var(--muted-soft);background:transparent;border:0;padding:4px;cursor:pointer}
-.topbar .who .out:hover{color:var(--ink)}
 @media (max-width:560px){.topbar .in{padding:8px 16px}}
 
 /* ---------- 4. 문서 타이포 ---------- */
@@ -329,14 +327,21 @@ mark.rd-mark.other.has-note{background:#DED5C6}
 #toast,#rd-toast{position:fixed;left:50%;bottom:64px;transform:translateX(-50%) translateY(8px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:2px;font-size:.8125rem;opacity:0;transition:all .2s ease-out;z-index:60;pointer-events:none;white-space:nowrap;max-width:90vw}
 #toast.show,#rd-toast.show{opacity:1;transform:translateX(-50%)}
 
-/* 좁은 화면에서 넓은 표는 행 단위로 쌓기 */
+/* 좁은 화면: 월별 가용·납부·일정 표는 행으로 쌓지 않고(너무 길어짐) 촘촘한 표 그대로 둔다. 2026-09-10 변경. */
 @media (max-width:560px){
-  table.stack{display:block;border-top:1.5px solid var(--ink)}
-  table.stack thead{display:none}
-  table.stack tbody{display:block}
-  table.stack tr{display:block;padding:8px 0 6px;border-bottom:1px solid var(--line)}
-  table.stack td{display:block;border:0;padding:2px 0 4px;text-align:left}
-  table.stack td:first-child{font-weight:700;padding-bottom:4px}
-  table.stack td:not(:first-child)::before{content:attr(data-label);display:inline-block;min-width:90px;font-size:.72rem;letter-spacing:.06em;color:var(--accent);font-weight:700}
+  table.stack{font-size:.8125rem;margin:6px 0 10px}
+  table.stack th,table.stack td{padding:7px 4px;line-height:1.45}
+  table.stack th:first-child,table.stack td:first-child{padding-left:0}
+  table.stack th:last-child,table.stack td:last-child{padding-right:0}
+  table.stack td:first-child{font-weight:600}
+  table.stack td.amt,table.stack th.amt{white-space:nowrap}
+  table.stack .tag{font-size:.625rem;padding:0 7px}
   table:not(.stack){display:block;overflow-x:auto}
+  /* 지출 내역: 항목 설명(날짜·카테고리)은 이름 아래 줄로 */
+  .st-day .it{font-size:.875rem;padding:9px 12px}
+  .st-day .it .nm small{display:block;margin:2px 0 0}
+  /* 주차 페이지 하단 메모 바: 한 줄에 들어가도록 작게 */
+  .rd-bar{gap:6px;padding:8px 12px;font-size:.75rem}
+  .rd-bar button{font-size:.75rem;padding:5px 9px}
+  .rd-bar .seg button{padding:5px 9px}
 }
