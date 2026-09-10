@@ -45,7 +45,7 @@ python scripts/new_week.py --date <날짜> --title "<제목>" --content ../work/
 python scripts/check_week.py weeks/<날짜>/index.html
 ```
 
-check가 FAIL이면 고치고 다시 돌린다. 로컬 확인이 필요하면 `python -m http.server 8770` 후 `http://127.0.0.1:8770/weeks/<날짜>/` (로그인 필요).
+check가 FAIL이면 고치고 다시 돌린다. 로컬 확인이 필요하면 `python -m http.server 8770` 후 `http://127.0.0.1:8770/weeks/<날짜>/`.
 
 ## 4. Firestore 세션 등록
 
@@ -60,7 +60,7 @@ node scripts/session.mjs get <날짜>
 - 발제자: 새 세션이면 발제 순서(`settings/rotation`)에서 그 달의 사람이 자동으로 들어간다. 메모에 발제자가 따로 있으면 `--presenter "이름"`으로 넣는다. 본문 HTML에는 발제자 이름을 쓰지 않는다(메타 줄이 Firestore에서 채운다).
 - 다음 모임 계획(`--next`)에 날짜를 쓸 때는 정기 규칙(매월 둘째 수요일)으로 계산한 날짜인지 확인한다. 목록 화면의 "다음 모임"은 규칙으로 자동 계산되므로 계획 문구에는 준비물·장소 위주로 쓴다.
 
-비밀번호는 실행 중 물어본다(화면에 표시되지 않음). 파일이나 대화에 기록하지 않는다. 실패(권한 오류)면 Firestore 규칙 게시 여부를 사용자에게 확인한다.
+로그인은 익명(자동)이라 묻는 것이 없다. 실패하면 메시지대로 콘솔의 "익명" 제공업체 켜짐 여부 또는 Firestore 규칙 게시 여부를 사용자에게 확인한다.
 
 ## 5. 커밋·푸시·확인
 

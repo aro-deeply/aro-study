@@ -1,4 +1,4 @@
-/* aro-study 공용 계층: Firebase 초기화, 로그인 게이트, 이름 선택, Firestore 헬퍼, 공용 유틸.
+/* aro-study 공용 계층: Firebase 초기화, 익명 로그인(비밀번호 없음), 이름 선택, Firestore 헬퍼, 공용 유틸.
    모든 페이지는 <script type="module"> 에서 이 파일을 import 한다.
 
    사용 예:
@@ -7,7 +7,7 @@
 */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import {
-  getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+  getAuth, signInAnonymously, onAuthStateChanged,
   setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import {
@@ -15,7 +15,7 @@ import {
   query, where, orderBy, limit, onSnapshot, serverTimestamp, writeBatch, Timestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
-import firebaseConfig, { LOGIN_EMAIL } from "./firebase-config.js";
+import firebaseConfig from "./firebase-config.js";
 
 /* ---------- Firebase ---------- */
 export const app = initializeApp(firebaseConfig);
@@ -117,21 +117,20 @@ export function getMe() { try { return localStorage.getItem(LS_ME) || ""; } catc
 export function setMe(id) { try { id ? localStorage.setItem(LS_ME, id) : localStorage.removeItem(LS_ME); } catch {} }
 
 /* ---------- 인증 ---------- */
+/* 비밀번호 없음(2026-09-10 변경). 처음 열 때 Firebase 익명 로그인을 자동으로 하고 이 기기에 유지한다.
+   Firestore·Storage 규칙의 request.auth != null 은 이 익명 사용자로 통과한다.
+   콘솔 > Authentication > Sign-in method 에서 "익명"이 켜져 있어야 한다. */
 function authError(code) {
   switch (code) {
-    case "auth/wrong-password":
-    case "auth/invalid-credential":
-    case "auth/invalid-login-credentials":
-      return "비밀번호가 맞지 않습니다.";
-    case "auth/user-not-found":
-    case "auth/invalid-email":
-      return "공용 계정을 찾을 수 없습니다. 총무에게 알려 주세요.";
-    case "auth/too-many-requests":
-      return "시도가 너무 많습니다. 잠시 후 다시 해 주세요.";
+    case "auth/operation-not-allowed":
+    case "auth/admin-restricted-operation":
+      return "익명 로그인이 꺼져 있음 · Firebase 콘솔 > Authentication > Sign-in method에서 '익명' 켜기";
     case "auth/network-request-failed":
-      return "네트워크 연결을 확인해 주세요.";
+      return "네트워크 연결 확인";
+    case "auth/too-many-requests":
+      return "시도가 너무 많음 · 잠시 후 다시";
     default:
-      return "로그인에 실패했습니다. (" + code + ")";
+      return "접속 실패 (" + code + ")";
   }
 }
 
@@ -139,37 +138,32 @@ function currentUser() {
   return new Promise(res => { const off = onAuthStateChanged(auth, u => { off(); res(u); }); });
 }
 
-/** 비밀번호 한 칸짜리 로그인 화면. 성공하면 resolve. */
-function showGate() {
-  return new Promise(resolve => {
-    const g = el(`
-      <div class="gate" id="gate">
-        <form class="panel" autocomplete="on">
-          <div class="brand"><small>HR STUDY</small><b>로그인</b></div>
-          <div class="field"><label for="gate-pw">비밀번호</label>
-            <input id="gate-pw" type="password" name="password" autocomplete="current-password" placeholder="공용 비밀번호" required autofocus></div>
-          <div class="err" id="gate-err"></div>
-          <button class="btn block" type="submit">입장</button>
-        </form>
-      </div>`);
-    document.body.appendChild(g);
-    const form = $("form", g), pw = $("#gate-pw", g), err = $("#gate-err", g), btn = $("button", g);
-    setTimeout(() => pw.focus(), 50);
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-      err.textContent = ""; btn.disabled = true; btn.textContent = "확인 중";
-      try {
-        await setPersistence(auth, browserLocalPersistence);
-        await signInWithEmailAndPassword(auth, LOGIN_EMAIL, pw.value);
-        g.remove();
-        resolve(auth.currentUser);
-      } catch (ex) {
-        err.textContent = authError(ex.code || "");
-        btn.disabled = false; btn.textContent = "입장";
-        pw.select();
+/** 익명 로그인. 실패하면 이유와 "다시 시도" 버튼을 보여 주고 성공할 때까지 기다린다. */
+async function signInSilently() {
+  let g = null;
+  for (;;) {
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      const cred = await signInAnonymously(auth);
+      if (g) g.remove();
+      return cred.user;
+    } catch (ex) {
+      console.error(ex);
+      if (!g) {
+        g = el(`
+          <div class="gate" id="gate">
+            <div class="panel">
+              <div class="brand"><small>HR STUDY</small><b>접속</b></div>
+              <div class="err" id="gate-err"></div>
+              <button class="btn block" type="button">다시 시도</button>
+            </div>
+          </div>`);
+        document.body.appendChild(g);
       }
-    });
-  });
+      $("#gate-err", g).textContent = authError(ex.code || "");
+      await new Promise(res => $("button", g).addEventListener("click", res, { once: true }));
+    }
+  }
 }
 
 /** 이름 선택 화면. 선택한 memberId를 resolve. 멤버가 없으면 빈 문자열로 계속. */
@@ -203,12 +197,6 @@ export function showNamePicker(list = activeMembers()) {
   });
 }
 
-export async function logout() {
-  setMe("");
-  await signOut(auth);
-  location.reload();
-}
-
 /* ---------- 상단 바 ---------- */
 export function renderTopbar() {
   let bar = $("#topbar");
@@ -220,23 +208,21 @@ export function renderTopbar() {
     <div class="who">
       ${isAdmin(me) ? `<a class="link-btn" href="${ROOT}admin.html">관리</a>` : ""}
       <button class="me" type="button" title="이름 바꾸기">${esc(me?.name || "이름 선택")}</button>
-      <button class="out" type="button">로그아웃</button>
     </div></div>`;
   $(".me", bar).addEventListener("click", async () => { await showNamePicker(); document.dispatchEvent(new CustomEvent("aro:me", { detail: getMe() })); });
-  $(".out", bar).addEventListener("click", () => { if (confirm("로그아웃할까요? 다음 방문 때 비밀번호를 다시 입력.")) logout(); });
   return bar;
 }
 
 /* ---------- 진입점 ---------- */
 /**
- * 로그인 확인 -> 멤버 로드 -> 이름 선택 -> 상단 바 표시.
+ * 익명 로그인(자동) -> 멤버 로드 -> 이름 선택 -> 상단 바 표시.
  * @param {{requireName?: boolean}} opt
  * @returns {Promise<{user, me: string, member: object|null, members: object[]}>}
  */
 export async function ready(opt = {}) {
   const requireName = opt.requireName !== false;
   let user = await currentUser();
-  if (!user) user = await showGate();
+  if (!user) user = await signInSilently();
   let list;
   try { list = await loadMembers(); }
   catch (ex) { console.error(ex); toast("멤버 목록을 읽지 못함 · Firestore 규칙 확인"); list = []; }

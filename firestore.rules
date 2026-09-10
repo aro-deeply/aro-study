@@ -1,8 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 로그인(공용 계정)한 사용자만 모든 컬렉션을 읽고 쓸 수 있다.
-    // 이것이 실제 접근 제한이다. 정적 HTML에는 민감한 내용을 두지 않는다.
+    // 앱을 통해 접속(익명 로그인 포함)한 사용자만 모든 컬렉션을 읽고 쓴다.
+    // 비밀번호가 없으므로(2026-09-10) 주소를 아는 사람은 누구나 통과한다. 이 규칙은 SDK 밖의 직접 호출만 막는다.
     match /{document=**} {
       allow read, write: if request.auth != null;
     }

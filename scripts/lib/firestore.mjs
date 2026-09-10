@@ -1,32 +1,12 @@
 /* scripts 공용: Firebase REST API로 Firestore를 읽고 쓰는 최소 도구 (Node 18+, 추가 설치 없음).
-   비밀번호는 환경변수 ARO_STUDY_PW 또는 실행 중 입력(화면에 표시되지 않음)으로 받고 어디에도 저장하지 않는다. */
+   로그인은 사이트와 같은 익명 로그인(비밀번호 없음). 콘솔에서 "익명" 제공업체가 켜져 있어야 한다. */
 import path from "node:path";
-import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cfgMod = await import(path.join(here, "..", "..", "assets", "firebase-config.js").replace(/\\/g, "/").replace(/^([A-Za-z]):/, "file:///$1:"));
-export const cfg = cfgMod.default, EMAIL = cfgMod.LOGIN_EMAIL;
+export const cfg = cfgMod.default;
 export const BASE = `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents`;
-
-/* ---------- 비밀번호 ---------- */
-export async function askPassword() {
-  if (process.env.ARO_STUDY_PW) return process.env.ARO_STUDY_PW;
-  return new Promise(res => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    process.stdout.write("공용 계정 비밀번호: ");
-    const stdin = process.stdin; let pw = "";
-    if (stdin.isTTY) stdin.setRawMode(true);
-    stdin.resume(); stdin.setEncoding("utf8");
-    const onData = ch => {
-      if (ch === "\r" || ch === "\n") { if (stdin.isTTY) stdin.setRawMode(false); stdin.removeListener("data", onData); process.stdout.write("\n"); rl.close(); res(pw); }
-      else if (ch === "") process.exit(1);
-      else if (ch === "" || ch === "\b") pw = pw.slice(0, -1);
-      else pw += ch;
-    };
-    stdin.on("data", onData);
-  });
-}
 
 /* ---------- Firestore 값 변환 ---------- */
 export const toVal = v => {
@@ -54,13 +34,18 @@ export const fromDoc = d => ({ id: d.name.split("/").pop(), ...Object.fromEntrie
 export const toFields = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, toVal(v)]));
 
 /* ---------- API ---------- */
-export async function signIn(pw) {
-  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${cfg.apiKey}`, {
+/** 익명 로그인(REST). 이메일 없이 signUp 하면 익명 사용자가 만들어진다. */
+export async function signIn() {
+  const r = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${cfg.apiKey}`, {
     method: "POST", headers: { "content-type": "application/json" },
-    body: JSON.stringify({ email: EMAIL, password: pw, returnSecureToken: true })
+    body: JSON.stringify({ returnSecureToken: true })
   });
   const j = await r.json();
-  if (!r.ok) throw new Error("로그인 실패: " + (j.error?.message || r.status));
+  if (!r.ok) {
+    const m = j.error?.message || String(r.status);
+    if (m.startsWith("ADMIN_ONLY_OPERATION")) throw new Error("익명 로그인이 꺼져 있음: Firebase 콘솔 > Authentication > Sign-in method 에서 '익명'을 켜세요");
+    throw new Error("로그인 실패: " + m);
+  }
   return j.idToken;
 }
 export async function api(token, method, url, body) {
@@ -83,8 +68,13 @@ export async function patchDoc(t, col, id, fields) {
 /** 자동 ID로 문서 추가. */
 export async function addDocTo(t, col, fields) { return fromDoc(await api(t, "POST", `${BASE}/${col}`, { fields: toFields(fields) })); }
 
-/** 로그인해서 토큰을 돌려준다. 실패하면 메시지를 찍고 종료. */
+/** 익명 로그인해서 토큰을 돌려준다. 실패하면 메시지를 찍고 종료. */
 export async function login() {
-  try { return await signIn(await askPassword()); }
-  catch (ex) { console.error(ex.message); process.exit(1); }
+  try { return await signIn(); }
+  catch (ex) {
+    console.error(ex.message);
+    process.exitCode = 1;
+    await new Promise(r => setTimeout(r, 200)); // Windows Node에서 fetch 직후 즉시 exit 하면 libuv 단언 오류가 나서 잠깐 기다린다
+    process.exit(1);
+  }
 }

@@ -9,7 +9,5 @@ const firebaseConfig = {
 };
 // ▲▲▲ 여기까지 ▲▲▲
 
-// 공용 로그인 계정의 이메일. 로그인 화면에는 표시하지 않는다.
-// Firebase 콘솔 > Authentication > Users 에 만든 계정과 같아야 한다.
-export const LOGIN_EMAIL = "aro.deeply@gmail.com";
+// 로그인은 익명(비밀번호 없음). 콘솔 > Authentication > Sign-in method 에서 "익명"을 켜 둔다.
 export default firebaseConfig;
