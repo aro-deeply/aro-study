@@ -75,15 +75,15 @@ check("budget last month 41,500", rows["2027-02"][0], 41500)
 check("budget last month sums to total", sum(r["alloc"] for r in b["rows"]), 250000)
 check("budget last ym", b["rows"][-1]["ym"], "2027-02")
 
-# 일정과 발제: 매월 둘째 화요일, 순서 a b c d e (2026-09 시작). 오늘 2026-10-20 -> 다음은 11월 10일, 발제 c
+# 일정과 발제: 매월 둘째 수요일, 순서 a b c d e (2026-09 시작). 오늘 2026-10-20 -> 다음은 11월 11일, 발제 c
 sch = pg_sched
-check("sched next date", sch["next"]["date"], "2026-11-10")
+check("sched next date", sch["next"]["date"], "2026-11-11")
 check("sched next presenter (c = 3/5)", (sch["next"]["presenter"], sch["next"]["index"]), ("c", 3))
 by = {r["ym"]: r for r in sch["rows"]}
-check("sched oct uses session date/presenter", (by["2026-10"]["date"], by["2026-10"]["presenter"], by["2026-10"]["fromSession"], by["2026-10"]["status"]), ("2026-10-13", "b", True, "done"))
+check("sched oct uses session date/presenter", (by["2026-10"]["date"], by["2026-10"]["presenter"], by["2026-10"]["fromSession"], by["2026-10"]["status"]), ("2026-10-14", "b", True, "done"))
 check("sched rotation wraps (2027-02 -> a)", by["2027-02"]["presenter"], "a")
-check("sched 2027-01 2nd tuesday", by["2027-01"]["date"], "2027-01-12")
-check("sched dec 2nd tuesday", by["2026-12"]["date"], "2026-12-08")
+check("sched 2027-01 2nd wednesday", by["2027-01"]["date"], "2027-01-13")
+check("sched dec 2nd wednesday", by["2026-12"]["date"], "2026-12-09")
 print("--- console ---")
 for l in logs: print(l[:300])
 print("RESULT:", "ALL PASS" if not fails else f"FAILED: {fails}")

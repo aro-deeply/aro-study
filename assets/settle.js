@@ -48,7 +48,8 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
       if (group.length) warnings.push(`"${x.item}"의 분배 대상이 비어 있어 활성 멤버 전원으로 계산했습니다.`);
     }
     if (!group.length) { warnings.push(`"${x.item}"을 나눌 대상이 없습니다.`); continue; }
-    const key = group.slice().sort().join(",");
+    // 회차(sessionId)가 다르면 따로 나눈다. 같은 회차에서 분배 대상이 같은 항목만 합산.
+    const key = `${x.sessionId || ""}|${group.slice().sort().join(",")}`;
     (groups[key] ||= { ids: group, amount: 0 }).amount += amount;
   }
   // 그룹별 1인 부담 = 합계 / 인원, 100원 단위 올림. 더 걷히는 차액은 회비로.

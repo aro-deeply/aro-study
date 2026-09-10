@@ -61,7 +61,7 @@ with sync_playwright() as p:
     pg.click('#rd-scope button[data-v="mine"]'); pg.wait_for_timeout(200)
 
     # 하이라이트 추가
-    g1 = pg.evaluate(OFFSET_JS, "매월 둘째 화요일"); sel = pg.evaluate(SELECT_JS, {"gs": g1, "ge": g1 + 12})
+    g1 = pg.evaluate(OFFSET_JS, "매월 둘째 수요일"); sel = pg.evaluate(SELECT_JS, {"gs": g1, "ge": g1 + 12})
     pg.wait_for_timeout(300)
     check("float shown on selection", pg.is_visible(".rd-float.show"))
     pg.click('.rd-float button[data-act="hl"]'); pg.wait_for_timeout(300)

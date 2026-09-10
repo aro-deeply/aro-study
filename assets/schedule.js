@@ -1,7 +1,7 @@
 /* aro-study 일정과 발제 순서.
 
    Firestore:
-   - settings/meeting:  { week: 1~5(5는 마지막), weekday: 0(일)~6(토), time, place, note }   정기 모임 규칙. 없으면 DEFAULT_MEETING(둘째 화요일).
+   - settings/meeting:  { week: 1~5(5는 마지막), weekday: 0(일)~6(토), time, place, note }   정기 모임 규칙. 없으면 DEFAULT_MEETING(둘째 수요일).
    - settings/rotation: { order: [memberId...], startMonth: "YYYY-MM", note }               발제 순서. startMonth의 발제자가 order[0], 이후 매월 한 칸씩, 끝나면 처음으로.
    - sessions/{id}.presenter: memberId                                                    그 회차의 실제 발제자(있으면 순서보다 우선).
 
@@ -11,7 +11,7 @@ import { esc, fmtDate, todayStr, memberName, honor, db, doc, getDoc } from "./ap
 
 export const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 export const WEEK_LABELS = { 1: "첫째", 2: "둘째", 3: "셋째", 4: "넷째", 5: "마지막" };
-export const DEFAULT_MEETING = { week: 2, weekday: 2, time: "", place: "", note: "" };
+export const DEFAULT_MEETING = { week: 2, weekday: 3, time: "", place: "", note: "" };
 
 /* ---------- 달 계산 ---------- */
 export const ym = iso => String(iso || "").slice(0, 7);
@@ -32,7 +32,7 @@ export function lastDayOf(s) {
 }
 const iso = (y, m, d) => `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
-/** 그 달의 n번째 요일(week 5는 마지막). 예: nthWeekday("2026-10", 2, 2) -> "2026-10-13" */
+/** 그 달의 n번째 요일(week 5는 마지막). 예: nthWeekday("2026-10", 2, 3) -> "2026-10-14" */
 export function nthWeekday(s, week, weekday) {
   const [y, m] = s.split("-").map(Number);
   week = Number(week) || 2; weekday = Number(weekday);
@@ -46,11 +46,11 @@ export function nthWeekday(s, week, weekday) {
 export function normalizeMeeting(m) {
   const r = { ...DEFAULT_MEETING, ...(m || {}) };
   r.week = Math.min(5, Math.max(1, Number(r.week) || 2));
-  r.weekday = Math.min(6, Math.max(0, Number(r.weekday ?? 2)));
+  r.weekday = Math.min(6, Math.max(0, Number(r.weekday ?? 3)));
   return r;
 }
 export function meetingDate(s, meeting) { const m = normalizeMeeting(meeting); return nthWeekday(s, m.week, m.weekday); }
-/** "매월 둘째 화요일" (+ 시간) */
+/** "매월 둘째 수요일" (+ 시간) */
 export function ruleLabel(meeting, withTime = true) {
   const m = normalizeMeeting(meeting);
   return `매월 ${WEEK_LABELS[m.week]} ${WEEKDAYS[m.weekday]}요일${withTime && m.time ? " " + m.time : ""}`;

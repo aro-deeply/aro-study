@@ -16,7 +16,7 @@ HR 스터디 모임의 주차별 기록·회비 관리·의견 사이트. GitHub
 - 정적 HTML에 두는 것: 제목, 날짜, 그날 다룬 내용 요약, 브리프 링크, 다음 모임 계획.
 - 멤버 이름·금액·의견·참석자·발제 순서·하이라이트는 전부 Firestore(`members`, `settings`, `terms`, `dues`, `sessions`, `expenses`, `payments`, `comments`, `annotations`). HTML에 하드코딩하지 않는다.
 - 운영 방식(2026-09-09): 회비를 걷어 회비에서 지출(`expenses.source: "fund"`, 기본값). 회비 밖 추가 비용만 `source: "split"`으로 참석자 n분의 1. `payments.from`이 `"fund"`면 회비에서 개인에게 보전한 송금. 자세한 것은 SPEC 3-1.
-- 2026-09-10 추가: 정기 모임은 매월 둘째 화요일(`settings/meeting`), 발제는 `settings/rotation` 순서대로 매월 한 명(세션 `presenter`가 있으면 우선, 화면에는 "이름 님"), 회비는 `terms.months`로 나눈 월별 가용 금액과 이월(월 배정 100원 단위 올림, 마지막 달이 적음). n분의 1은 100원 단위 올림이고 차액은 회비 귀속(`computeSettlement().surplus` → `computeFund({ splitSurplus })`). SPEC 3-1, 3-2.
+- 2026-09-10 추가: 정기 모임은 매월 둘째 수요일(`settings/meeting`), 발제는 `settings/rotation` 순서대로 매월 한 명(세션 `presenter`가 있으면 우선, 화면에는 "이름 님"), 회비는 `terms.months`로 나눈 월별 가용 금액과 이월(월 배정 100원 단위 올림, 마지막 달이 적음). n분의 1은 100원 단위 올림이고 차액은 회비 귀속(`computeSettlement().surplus` → `computeFund({ splitSurplus })`). SPEC 3-1, 3-2.
 - 운영 데이터를 한 번에 넣을 때는 `scripts/setup.mjs <json>`(JSON은 저장소 밖 `../work/aro-study/`에 둔다, 비밀번호는 실행 중 입력).
 - 세션 ID = 모임 날짜(YYYY-MM-DD) = 주차 폴더명.
 - Firestore 쿼리는 복합 인덱스가 필요 없게 `where` 하나만 쓰고 정렬은 클라이언트에서 한다. 인덱스 오류가 나면 콘솔 링크를 사용자에게 안내한다.
