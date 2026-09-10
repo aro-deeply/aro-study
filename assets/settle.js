@@ -128,7 +128,7 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
 export function renderSettlement(root, r, opt = {}) {
   const title = opt.title || "정산";
   if (!r.count) {
-    root.innerHTML = opt.emptyText === "" ? "" : `<div class="empty">${esc(opt.emptyText || "아직 등록된 지출이 없습니다.")}${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#expenses">관리 화면</a>에서 입력하면 여기 표시됩니다.' : ""}</div>`;
+    root.innerHTML = opt.emptyText === "" ? "" : `<div class="empty">${esc(opt.emptyText || "등록된 지출 없음.")}${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#expenses">관리 화면</a>에서 입력하면 표시됨.' : ""}</div>`;
     return;
   }
   const rule = r.uniform && r.n
@@ -146,7 +146,7 @@ export function renderSettlement(root, r, opt = {}) {
     <div class="st-person" style="border-style:dashed">
       <div class="nm">${fundLabel} 귀속</div>
       <b>${fmtWon(r.surplus)}원</b>
-      <span>1인 ${fmtWon(r.share || 0)}원 x ${r.n || "n"}명 - 총액 ${fmtWon(r.total)}${r.adminId ? ` · 총무가 받아 ${fundLabel}로 보관` : ""}</span>
+      <span>${fmtWon(r.share || 0)} x ${r.n || "n"}명 - ${fmtWon(r.total)}${r.adminId ? ` · 총무가 받아 ${fundLabel}로 보관` : ""}</span>
     </div>` : "";
 
   const catTotal = r.categories.reduce((s, c) => s + c.amount, 0) || 1;
@@ -162,7 +162,7 @@ export function renderSettlement(root, r, opt = {}) {
 
   const transfers = r.transfers.length
     ? r.transfers.map(t => `<div class="tr"><span>${esc(memberName(t.from))}</span><span class="arrow">→</span><span>${esc(memberName(t.to))}</span><span class="amt">${fmtWon(t.amount)}원</span></div>`).join("")
-    : `<div class="tr done"><span>남은 정산이 없습니다.</span></div>`;
+    : `<div class="tr done"><span>남은 정산 없음.</span></div>`;
   const done = (opt.payments || []).filter(p => p.from !== FUND_ID && p.to !== FUND_ID).map(p => `<div class="tr done"><span>${esc(memberName(p.from))}</span><span class="arrow">→</span><span>${esc(memberName(p.to))}</span><span class="amt">${fmtWon(p.amount)}원</span><span class="tag ok">완료 ${fmtDate(p.date, "short")}</span></div>`).join("");
 
   const bad = !r.checks.itemsOk || !r.checks.owedOk || r.checks.dupes.length || r.warnings.length;
@@ -173,11 +173,11 @@ export function renderSettlement(root, r, opt = {}) {
         r.checks.dupes.length ? `중복 의심: ${r.checks.dupes.map(esc).join(", ")}` : "",
         ...r.warnings.map(esc)
       ].filter(Boolean).join(" · ")
-    : `중복 없음 · 합계 검산 완료 (항목 합 ${fmtWon(r.checks.subSum)} = 총액, 부담액 합 ${fmtWon(r.checks.owedSum)} = 총액${r.surplus ? ` + 회비 귀속 ${fmtWon(r.surplus)}` : ""})`;
+    : `검산 완료 · 항목 합 ${fmtWon(r.checks.subSum)} = 총액 · 부담액 합 ${fmtWon(r.checks.owedSum)} = 총액${r.surplus ? ` + 귀속 ${fmtWon(r.surplus)}` : ""}`;
 
   root.innerHTML = `
     <div class="st-head">
-      <div class="st-total"><div class="lab">${esc(opt.totalLabel || "총 지출")}</div><b>${fmtWon(r.total)}<small>원</small></b><span>${esc(opt.subtitle || "")}${opt.subtitle ? ", " : ""}항목 ${r.count}건</span></div>
+      <div class="st-total"><div class="lab">${esc(opt.totalLabel || "총 지출")}</div><b>${fmtWon(r.total)}<small>원</small></b><span>${esc(opt.subtitle || "")}${opt.subtitle ? " · " : ""}${r.count}건</span></div>
       <div class="st-rule"><div class="lab">정산 기준</div>${rule}</div>
     </div>
     <div class="st-people">${people}${surplusCard}</div>
@@ -185,7 +185,7 @@ export function renderSettlement(root, r, opt = {}) {
     <div class="lab">상세 내역</div>${days}
     <div class="lab" style="margin-top:18px">보낼 돈</div>
     <div class="st-transfers">${transfers}${done}</div>
-    ${r.surplus && r.adminId ? `<div class="secsub">올림으로 더 걷히는 ${fmtWon(r.surplus)}원은 위 "보낼 돈"에 포함돼 총무에게 모이고, 총무 개인 몫이 아니라 ${fundLabel} 잔액으로 잡힙니다. 총무 부담액은 다른 멤버와 같습니다.</div>` : ""}
+    ${r.surplus && r.adminId ? `<div class="secsub">차액 ${fmtWon(r.surplus)}원은 보낼 돈에 포함돼 총무에게 모이고 ${fundLabel} 잔액으로 잡힘. 총무 부담액은 다른 멤버와 같음.</div>` : ""}
     <div class="st-check${bad ? " bad" : ""}">${checkLine}</div>`;
 }
 
@@ -244,7 +244,7 @@ export async function mountSettlement(root, sessionId, opt = {}) {
     return { session, expenses, payments, result: r, fund: f };
   } catch (ex) {
     console.error(ex);
-    root.innerHTML = `<div class="note warn">비용을 불러오지 못했습니다: ${esc(ex.message || ex)}</div>`;
+    root.innerHTML = `<div class="note warn">비용 불러오기 실패: ${esc(ex.message || ex)}</div>`;
     return null;
   }
 }

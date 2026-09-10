@@ -22,7 +22,7 @@
 <div class="wrap">
   <div class="kicker"><span>HR STUDY</span><span>모임 기록</span></div>
   <h1>주차별 기록, 정산, 의견</h1>
-  <p class="sub">모임마다 공유한 내용과 다음 계획을 남기고, 회비 납부와 잔액은 여기서 확인합니다. 이름과 금액은 로그인한 멤버에게만 보입니다.</p>
+  <p class="sub">모임 기록, 일정, 회비, 정산. 이름과 금액은 로그인한 멤버에게만 보임.</p>
 
   <div class="stats four" id="stats">
     <div class="stat"><b class="soft">…</b><span>다음 모임</span></div>
@@ -32,11 +32,11 @@
   </div>
 
   <h2>일정과 발제 <span class="cnt" id="sched-sub"></span></h2>
-  <p class="secsub">정기 모임은 매월 정해진 요일에 하고, 발제는 정한 순서대로 매월 한 명씩 돌아갑니다.</p>
+  <p class="secsub">발제는 정한 순서대로 매월 한 명.</p>
   <div id="sched"><div class="empty">불러오는 중</div></div>
 
   <h2>회비 현황 <span class="cnt" id="fund-sub"></span></h2>
-  <p class="secsub">1인 회비를 걷어 총무가 보관하고, 모임 비용은 이 회비에서 씁니다. 회비 총액을 개월 수로 나눈 월별 가용 금액 안에서 쓰고, 덜 쓴 금액은 다음 달로 이월됩니다.</p>
+  <p class="secsub">월별 가용 금액 안에서 쓰고, 덜 쓴 금액은 다음 달로 이월됨.</p>
   <div id="fund"><div class="empty">불러오는 중</div></div>
 
   <h2>주차 목록 <span class="cnt" id="week-count"></span></h2>
@@ -44,11 +44,11 @@
 
   <div id="cum-wrap" class="hidden">
   <h2>추가 비용 정산 <span class="cnt" id="cum-sub"></span></h2>
-  <p class="secsub">회비 밖에서 참석자끼리 n분의 1로 나눈 비용은 회차마다 따로 정리합니다. 1인 부담은 100원 단위 올림이고 그 차액은 회비로 들어갑니다.</p>
+  <p class="secsub">회비 밖 비용은 회차별로 참석자 n분의 1. 100원 단위 올림, 차액은 회비 귀속.</p>
   <div id="cum"></div>
   </div>
 
-  <p class="foot">HR STUDY · 모임 기록. 새 주차는 이 목록 맨 위에 추가됩니다. <a href="demo/">화면 예시</a></p>
+  <p class="foot">HR STUDY · 모임 기록. 새 주차는 목록 맨 위에 추가됨. <a href="demo/">화면 예시</a></p>
 </div>
 
 <script type="module">
@@ -70,7 +70,7 @@
       const S = await import("./demo/sample.js");
       setMembers(S.MEMBERS); me = "a"; today = S.TODAY || today;
       sessions = S.SESSIONS; expenses = S.EXPENSES; payments = S.PAYMENTS; comments = S.COMMENTS; terms = S.TERMS; dues = S.DUES; settings = S.SETTINGS;
-      $(".sub").insertAdjacentHTML("afterend", '<div class="note">화면 예시입니다. 이름과 금액은 가명·예시이며 실제 데이터가 아닙니다.</div>');
+      $(".sub").insertAdjacentHTML("afterend", '<div class="note">화면 예시. 이름과 금액은 가명이며 실제 데이터 아님.</div>');
     } else {
       ({ me } = await ready());
       const [sSnap, eSnap, pSnap, cSnap, tSnap, dSnap, st] = await Promise.all([
@@ -139,7 +139,7 @@
         <div class="facts">${facts.map(f => `<span>${f}</span>`).join("")}</div>`;
       const href = DEMO ? "demo/" : `weeks/${esc(s.id)}/`;
       return s.page ? `<a class="week" href="${href}">${inner}</a>` : `<div class="week nopage">${inner}</div>`;
-    }).join("") : `<div class="empty">아직 기록된 모임이 없습니다.${isAdmin() ? ' <a href="admin.html#sessions">관리 화면</a>에서 첫 세션을 만들 수 있습니다.' : ""}</div>`;
+    }).join("") : `<div class="empty">기록된 모임 없음.${isAdmin() ? ' <a href="admin.html#sessions">관리 화면</a>에서 세션을 만들면 표시됨.' : ""}</div>`;
 
     // 추가 비용 정산: 회차마다 따로 정리한다(참석자 n분의 1로 나눈 지출이 있는 회차만, 최신순).
     const splitSessions = sessions.filter(s => expenses.some(x => x.sessionId === s.id && isSplit(x)));
@@ -156,8 +156,8 @@
     }
   } catch (ex) {
     console.error(ex);
-    const msg = /insufficient permissions/i.test(ex.message || "") ? "권한 오류입니다. 총무가 Firestore 규칙을 게시했는지 확인해 주세요." : esc(ex.message || ex);
-    weeksEl.innerHTML = `<div class="note warn">불러오지 못했습니다: ${msg}</div>`;
+    const msg = /insufficient permissions/i.test(ex.message || "") ? "권한 오류. 총무가 Firestore 규칙을 게시했는지 확인 필요." : esc(ex.message || ex);
+    weeksEl.innerHTML = `<div class="note warn">불러오기 실패: ${msg}</div>`;
     cumEl.innerHTML = ""; statsEl.innerHTML = ""; fundEl.innerHTML = ""; schedEl.innerHTML = "";
   }
   document.addEventListener("aro:me", () => location.reload());

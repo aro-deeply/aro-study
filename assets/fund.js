@@ -136,8 +136,7 @@ export function termPeriod(t) {
 /** 회비 현황과 주차 페이지에 같이 쓰는 월별 가용 금액 표. */
 export function renderBudget(b, opt = {}) {
   if (!b) return "";
-  const note = b.status === "before" ? `${fmtMonth(b.startYm)}부터 씁니다. 그 전 지출은 잔액에서만 빠집니다.`
-    : b.status === "after" ? `${fmtMonth(b.endYm)}로 기간이 끝났습니다.` : "";
+  const note = b.status === "before" ? `${fmtMonth(b.startYm, "short")}부터.` : b.status === "after" ? `${fmtMonth(b.endYm)}로 끝남.` : "";
   const rows = b.rows.map(r => `<tr${r.isCurrent ? ' class="hl"' : ""}${r.remaining < 0 ? ' data-over="1"' : ""}>
       <td>${esc(fmtMonth(r.ym))}${r.isCurrent ? ' <span class="tag">이달</span>' : ""}</td>
       <td class="amt" data-label="배정">${fmtWon(r.alloc)}</td>
@@ -145,7 +144,7 @@ export function renderBudget(b, opt = {}) {
       <td class="amt" data-label="지출">${r.spent ? fmtWon(r.spent) : '<span class="soft">-</span>'}</td>
       <td class="amt" data-label="남은 금액"><b>${fmtWon(r.remaining)}</b></td></tr>`).join("");
   return `<div class="lab" style="margin-top:16px">월별 가용 금액</div>
-    <div class="secsub" style="margin:0 0 8px">회비 총액 ${fmtWon(b.total)}원을 ${b.months}개월로 나눠 매월 ${fmtWon(b.monthly)}원(100원 단위 올림${b.last !== b.monthly ? `, 마지막 달 ${fmtWon(b.last)}원` : ""}). 덜 쓴 금액은 다음 달로 이월됩니다.${note ? " " + esc(note) : ""}</div>
+    <div class="secsub" style="margin:0 0 8px">${fmtWon(b.total)}원 / ${b.months}개월 = 월 ${fmtWon(b.monthly)}원 (100원 올림${b.last !== b.monthly ? `, 마지막 달 ${fmtWon(b.last)}원` : ""}).${note ? " " + esc(note) : ""}</div>
     <table class="stack budget"><thead><tr><th>월</th><th class="amt">배정</th><th class="amt">이월</th><th class="amt">지출</th><th class="amt">남은 금액</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -160,7 +159,7 @@ const statusTag = r => r.status === "paid" ? '<span class="tag ok">납부</span>
 export function renderFund(root, f, opt = {}) {
   const t = opt.termId ? f.terms.find(x => x.id === opt.termId) : f.current;
   if (!t && !f.duesCount && !f.fundExpenses.length) {
-    root.innerHTML = `<div class="empty">아직 회비 설정이 없습니다.${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#dues">관리 화면</a>에서 1인 회비를 정하면 여기 표시됩니다.' : ""}</div>`;
+    root.innerHTML = `<div class="empty">회비 설정 없음.${opt.adminHint ? ' 총무가 <a href="' + esc(opt.adminHint) + '#dues">관리 화면</a>에서 정하면 표시됨.' : ""}</div>`;
     return;
   }
   const neg = f.balance < 0;
@@ -169,8 +168,8 @@ export function renderFund(root, f, opt = {}) {
       <div class="st-total${neg ? " neg" : ""}"><div class="lab">회비 잔액</div><b>${fmtWon(f.balance)}<small>원</small></b>
         <span>${incomeLine(f)}${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
       <div class="st-rule"><div class="lab">${t ? esc(t.name || "회비") : "회비 설정 없음"}</div>
-        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명${t.budget ? ` · 월 ${fmtWon(t.budget.monthly)}원 x ${t.budget.months}개월` : ""}<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq" style="font-weight:500">입금 계좌: ${esc(t.account)}</div>` : ""}${t.note ? `<div class="secsub" style="margin:4px 0 0">${esc(t.note)}</div>` : ""}` : "회비 설정 없이 기록된 납부·지출만 합산했습니다."}
-        ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액을 넘었습니다. 추가 회비를 걷거나 초과분을 참석자 n분의 1로 나눕니다.</div>' : ""}</div>
+        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq" style="font-weight:500">입금 계좌: ${esc(t.account)}</div>` : ""}${t.note ? `<div class="secsub" style="margin:4px 0 0">${esc(t.note)}</div>` : ""}` : "회비 설정 없이 납부·지출만 합산."}
+        ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액을 넘음.</div>' : ""}</div>
     </div>`;
 
   const rows = t ? t.rows.map(r => `<tr${r.id === opt.me ? ' class="hl"' : ""}${r.status !== "paid" ? ' data-unpaid="1"' : ""}>
@@ -185,7 +184,7 @@ export function renderFund(root, f, opt = {}) {
   const pend = f.reimburse.filter(r => r.remaining > 0);
   const reimb = pend.length
     ? `<div class="lab" style="margin-top:16px">회비에서 보전할 돈</div><div class="st-transfers">${pend.map(r => `<div class="tr"><span>${fundLabel}</span><span class="arrow">→</span><span>${esc(r.name)}</span><span class="amt">${fmtWon(r.remaining)}원</span></div>`).join("")}</div>
-       <div class="secsub">총무가 아닌 사람이 회비 지출을 대신 결제한 금액입니다. 총무가 보내고 관리 화면 "송금 기록"에 남기면 사라집니다.</div>`
+       <div class="secsub">대신 결제한 금액. 총무가 보내고 송금 기록에 남기면 사라짐.</div>`
     : "";
 
   const others = f.terms.filter(x => x !== t);
@@ -232,7 +231,7 @@ export function renderSessionFund(root, { items = [], f = null, payments = [] })
   root.innerHTML = `
     <div class="st-head">
       <div class="st-total"><div class="lab">이 회차 회비 지출</div><b>${fmtWon(total)}<small>원</small></b><span>항목 ${items.length}건 · 참석자 개인 부담 없음</span></div>
-      <div class="st-rule"><div class="lab">회비 잔액 (현재)</div>${f ? `<div class="eq${f.balance < 0 ? ' style="color:var(--danger)"' : ""}">${fmtWon(f.balance)}원</div>${incomeLine(f)}${f.current ? ` · ${esc(f.current.name || "")} ${esc(termPeriod(f.current))}` : ""}${budgetLine(f)}` : "잔액을 불러오지 못했습니다."}</div>
+      <div class="st-rule"><div class="lab">회비 잔액 (현재)</div>${f ? `<div class="eq${f.balance < 0 ? ' style="color:var(--danger)"' : ""}">${fmtWon(f.balance)}원</div>${incomeLine(f)}${f.current ? ` · ${esc(f.current.name || "")} ${esc(termPeriod(f.current))}` : ""}${budgetLine(f)}` : "잔액 불러오기 실패"}</div>
     </div>
     <div class="st-day"><div class="hd"><b>내역</b><span class="n">${items.length}건</span><span class="sum">${fmtWon(total)}원</span></div>${list}</div>
     ${reimbRows.length ? `<div class="lab" style="margin-top:14px">회비에서 보전</div><div class="st-transfers">${reimbRows.join("")}</div>` : ""}`;

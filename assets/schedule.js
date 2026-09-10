@@ -121,7 +121,7 @@ export function renderSchedule(root, sch, opt = {}) {
         <span>${next?.session ? "확정 일정" : esc(ruleLabel(m, false))}${place ? " · " + esc(place) : ""}</span></div>
       <div class="st-rule"><div class="lab">${next ? fmtMonth(next.ym, "short") + " 발제" : "발제"}</div>
         <div class="eq">${esc(nextName)}${next?.fromSession ? ' <span class="tag">확정</span>' : ""}</div>
-        ${r.order.length ? `순서 ${next?.index || "-"} / ${r.order.length}명 · ${esc(fmtMonth(r.startMonth))}부터 매월 한 명씩` : "발제 순서가 아직 없습니다." + (opt.adminHint ? ` <a href="${esc(opt.adminHint)}#schedule">관리 화면</a>에서 정합니다.` : "")}
+        ${r.order.length ? `순서 ${next?.index || "-"}/${r.order.length} · ${esc(fmtMonth(r.startMonth))}부터` : "발제 순서 없음." + (opt.adminHint ? ` <a href="${esc(opt.adminHint)}#schedule">관리 화면</a>에서 정함.` : "")}
         ${opt.nextPlan ? `<div class="eq" style="font-weight:500;margin-top:6px">${esc(opt.nextPlan)}</div>` : ""}</div>
     </div>`;
   const table = `<table class="stack sched"><thead><tr><th>월</th><th>모임일</th><th>발제</th><th>상태</th></tr></thead><tbody>${rows.map(x => `
@@ -132,7 +132,7 @@ export function renderSchedule(root, sch, opt = {}) {
       <td data-label="상태">${statusTag(x.status)}${x.session?.page ? ` <a href="${esc(opt.weekHref ? opt.weekHref(x.session) : "weeks/" + x.session.id + "/")}">기록</a>` : ""}</td></tr>`).join("")}</tbody></table>`;
   const cycle = r.order.length
     ? `<div class="lab" style="margin-top:14px">발제 순서 (${r.order.length}명 순환)</div><div class="chips">${r.order.map((id, i) => `<span class="chip${id === next?.presenter ? "" : " dim"}">${i + 1}. ${esc(honor(memberName(id)))}</span>`).join("")}</div>
-       <div class="secsub" style="margin-top:8px">한 바퀴 돌면 처음으로 돌아갑니다. 특정 달만 바꾸려면 총무가 그 세션의 발제자를 따로 정합니다.</div>`
+       <div class="secsub" style="margin-top:8px">한 바퀴 돌면 처음부터. 특정 달만 바꾸려면 세션의 발제자를 따로 정함.</div>`
     : "";
   root.innerHTML = head + table + cycle;
 }
