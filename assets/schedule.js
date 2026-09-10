@@ -111,13 +111,14 @@ const statusTag = st => st === "next" ? '<span class="tag">다음</span>' : st =
  */
 export function renderSchedule(root, sch, opt = {}) {
   const { rows, next, meeting: m, rotation: r } = sch;
-  const place = [m.time, m.place].filter(Boolean).join(" · ");
+  // 세션에 시간·장소가 있으면(확정 일정) 규칙의 기본값보다 우선
+  const place = [next?.session?.time || m.time, next?.session?.place || m.place].filter(Boolean).join(" · ");
   const nextName = next?.presenter ? honor(memberName(next.presenter)) : "미정";
   const head = `
     <div class="st-head">
       <div class="st-total"><div class="lab">다음 모임</div>
         <b>${next ? fmtDate(next.date, "short") : "미정"}</b>
-        <span>${esc(ruleLabel(m, false))}${place ? " · " + esc(place) : ""}${next?.session && !next.session.page ? " · 세션 등록됨" : ""}</span></div>
+        <span>${next?.session ? "확정 일정" : esc(ruleLabel(m, false))}${place ? " · " + esc(place) : ""}</span></div>
       <div class="st-rule"><div class="lab">${next ? fmtMonth(next.ym, "short") + " 발제" : "발제"}</div>
         <div class="eq">${esc(nextName)}${next?.fromSession ? ' <span class="tag">확정</span>' : ""}</div>
         ${r.order.length ? `순서 ${next?.index || "-"} / ${r.order.length}명 · ${esc(fmtMonth(r.startMonth))}부터 매월 한 명씩` : "발제 순서가 아직 없습니다." + (opt.adminHint ? ` <a href="${esc(opt.adminHint)}#schedule">관리 화면</a>에서 정합니다.` : "")}

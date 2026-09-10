@@ -59,7 +59,7 @@ aro-study/
 정적 HTML에 두는 것: 주차 제목, 날짜, 그날 다룬 주제와 공유 내용 요약, 관련 브리프 링크, 다음 모임 계획. 이름·금액·의견은 전부 Firestore.
 
 - `members/{memberId}`: `{ name, order, active, joinedAt }`
-- `sessions/{sessionId}`: sessionId는 `2026-09-XX` 형식. `{ date, title, presenter: memberId | "", attendees: [memberId], nextPlan, memo, createdAt }`. 주차 HTML의 메타를 미러링하되, 참석자·발제자는 여기만 둔다. `presenter`가 있으면 발제 순서(`settings/rotation`)보다 우선. (presenter 2026-09-10 추가)
+- `sessions/{sessionId}`: sessionId는 `2026-09-XX` 형식. `{ date, title, presenter: memberId | "", attendees: [memberId], time, place, nextPlan, memo, createdAt }`. 주차 HTML의 메타를 미러링하되, 참석자·발제자는 여기만 둔다. `presenter`가 있으면 발제 순서(`settings/rotation`)보다 우선. `time`·`place`는 정기 규칙과 다를 때만 넣는 확정 일정(선택). 정기 요일과 다른 날에 모이면 그 날짜로 세션을 미리 만들어 "다음 모임"이 그 날짜를 보게 한다(오늘 이후이고 page가 없으면 목록에 "예정" 카드). (2026-09-10 추가)
 - `settings/meeting`: `{ week: 1~5(5는 마지막), weekday: 0(일)~6(토), time, place }`. 정기 모임 규칙. 없으면 둘째 수요일. 다음 모임 날짜는 이 규칙으로 계산하고, 그 달에 세션이 있으면 세션 날짜를 쓴다. (2026-09-10 추가)
 - `settings/rotation`: `{ order: [memberId...], startMonth: "YYYY-MM" }`. 발제 순서. startMonth의 발제자가 order[0], 매월 한 칸씩, 끝나면 처음으로. (2026-09-10 추가)
 - `terms/{termId}`: `{ name, start, end, fee, months, account, memberIds: [memberId] | null, note }`. 회비 설정: 1인 금액과 선택적 기간(start·end는 비어 있을 수 있음, 이름도 비우면 "회비"). 여러 개면 기간이 오늘을 포함하는 것, 없으면 가장 최근 것을 현재로 본다. `memberIds`가 null이면 활성 멤버 전원이 대상. (2026-09-09 추가) `months`(사용 개월 수)와 `start`가 있으면 월별 가용 금액을 계산한다: 총액(1인 회비 x 대상 인원)을 months로 나눠 매월 배정하고 덜 쓴 만큼 다음 달로 이월. `end`가 비어 있으면 마지막 달 말일로 본다. `account`는 입금 계좌 표시용. (2026-09-10 추가)

@@ -8,6 +8,7 @@
      node scripts/session.mjs set 2026-09-15 --title "제목" --next "다음 계획" --attendees "이름1,이름2" --presenter "이름" --briefs 1 --page
        --attendees 를 생략하면 기존 참석자를 유지한다(새 문서면 빈 배열).
        --presenter 는 이 회차 발제자 이름. 생략하면 기존 값 유지(새 문서면 발제 순서에서 그 달의 사람을 자동으로 넣는다).
+       --time "19:00" --place "장소" 는 정기 규칙과 다른 시간·장소(선택).
        --page 는 weeks/<date>/index.html 이 있다는 표시(목록에서 링크 활성).
 */
 import { login, listMembers, getDocById, patchDoc } from "./lib/firestore.mjs";
@@ -51,6 +52,8 @@ if (cmd === "members") {
   const ms = await listMembers(token);
   const fields = {};
   if (opt.title) fields.title = String(opt.title);
+  if (opt.time) fields.time = String(opt.time);
+  if (opt.place) fields.place = String(opt.place);
   if (opt.next) fields.nextPlan = String(opt.next);
   if (opt.briefs !== undefined) fields.briefCount = Number(opt.briefs) || 0;
   if (opt.page) fields.page = true;

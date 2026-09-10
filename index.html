@@ -108,7 +108,7 @@
         : `<b>-</b><span>회비 기간 종료</span>`)
       : `<b>-</b><span>월별 가용 금액 (회비 설정에 개월 수를 넣으면 표시)</span>`;
     statsEl.innerHTML = `
-      <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${esc(ruleLabel(sch.meeting))}${nextPlan ? "<br>" + esc(nextPlan) : ""}</span></div>
+      <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${nx?.session ? "확정" + [nx.session.time || sch.meeting.time, nx.session.place || sch.meeting.place].filter(Boolean).map(v => " · " + esc(v)).join("") : esc(ruleLabel(sch.meeting))}${nextPlan && !nx?.session ? "<br>" + esc(nextPlan) : ""}</span></div>
       <div class="stat"><b>${nx?.presenter ? esc(honor(memberName(nx.presenter))) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>
       <div class="stat"><b${f.balance < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(f.balance)}${won}</b><span>회비 잔액${cur ? ` · 납부 ${cur.paidCount}/${cur.rows.length}명${unpaid.length ? `, 미납 ${unpaid.length}명` : ""}` : ""}</span></div>
       <div class="stat">${budgetStat}</div>`;
@@ -125,15 +125,17 @@
     $("#week-count").textContent = sessions.length ? `${sessions.length}회` : "";
     weeksEl.innerHTML = sessions.length ? sessions.map((s, i) => {
       const no = String(sessions.length - i).padStart(2, "0");
-      const facts = [`참석 <b>${(s.attendees || []).length}명</b>`];
+      const upcoming = (s.date || "") >= today && !s.page;   // 아직 열리지 않은 모임(예정)
+      const facts = upcoming ? [] : [`참석 <b>${(s.attendees || []).length}명</b>`];
       if (s.presenter) facts.push(`발제 <b>${esc(honor(memberName(s.presenter)))}</b>`);
+      if (upcoming) { const when = [s.time, s.place].filter(Boolean).join(" · "); if (when) facts.push(esc(when)); }
       const spent = expenses.filter(x => x.sessionId === s.id).reduce((a, x) => a + (Number(x.amount) || 0), 0);
       if (spent) facts.push(`지출 <b>${fmtWon(spent)}원</b>`);
       if (s.briefCount) facts.push(`브리프 <b>${s.briefCount}편</b>`);
-      facts.push(`의견 <b>${commentCount[s.id] || 0}개</b>`);
-      const tag = s.page ? "" : ' <span class="tag">기록 작성 전</span>';
+      if (!upcoming) facts.push(`의견 <b>${commentCount[s.id] || 0}개</b>`);
+      const tag = s.page ? "" : (upcoming ? ' <span class="tag">예정</span>' : ' <span class="tag">기록 작성 전</span>');
       const inner = `<div class="meta"><b>WEEK ${no}</b><span>${fmtDate(s.date)}</span></div>
-        <h3>${esc(s.title || "(제목 없음)")}${tag}</h3>
+        <h3>${esc(s.title || (upcoming ? "다음 모임" : "(제목 없음)"))}${tag}</h3>
         <div class="facts">${facts.map(f => `<span>${f}</span>`).join("")}</div>`;
       const href = DEMO ? "demo/" : `weeks/${esc(s.id)}/`;
       return s.page ? `<a class="week" href="${href}">${inner}</a>` : `<div class="week nopage">${inner}</div>`;
