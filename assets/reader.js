@@ -10,7 +10,7 @@
      mountComments({ sessionId, me, root: $("#comments") }); // 의견
 */
 import {
-  db, collection, doc, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, writeBatch,
+  auth, db, collection, doc, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp, writeBatch,
   memberName, memberById, esc, el, toast, $, $$, fmtTime
 } from "./app.js";
 
@@ -23,7 +23,8 @@ export function firestoreStore(colName, sessionId) {
         snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
         err => { console.error(err); toast(/insufficient permissions/i.test(err.message) ? "권한 오류: Firestore 규칙을 확인하세요" : "불러오기 실패: " + err.message, 4000); cb([]); });
     },
-    async add(data) { const r = await addDoc(col, { ...data, sessionId, createdAt: serverTimestamp() }); return r.id; },
+    // uid: 접속 토큰의 id. Firestore 규칙이 수정·삭제를 본인(같은 uid) 또는 총무로 제한하는 데 쓴다.
+    async add(data) { const r = await addDoc(col, { ...data, sessionId, uid: auth.currentUser?.uid || "", createdAt: serverTimestamp() }); return r.id; },
     async update(id, patch) { await updateDoc(doc(db, colName, id), patch); },
     async remove(id) { await deleteDoc(doc(db, colName, id)); },
     async removeMany(ids) { const b = writeBatch(db); ids.forEach(id => b.delete(doc(db, colName, id))); await b.commit(); }

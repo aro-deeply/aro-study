@@ -1,10 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // 앱을 통해 접속(익명 로그인 포함)한 사용자만 모든 컬렉션을 읽고 쓴다.
-    // 비밀번호가 없으므로(2026-09-10) 주소를 아는 사람은 누구나 통과한다. 이 규칙은 SDK 밖의 직접 호출만 막는다.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
+    // 2026-09-10 기준.
+    // 접속(익명 로그인 포함)한 사용자는 전부 읽을 수 있다. 비밀번호가 없으므로 주소를 아는 사람은 누구나 볼 수 있다.
+    // 관리 데이터(멤버·설정·회비·세션·지출·송금)는 총무 계정(이메일 로그인)만 쓴다.
+    // 의견·하이라이트·관련 자료는 누구나 올리고, 고치거나 지우는 것은 올린 본인(같은 uid) 또는 총무만.
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.email == "aro.deeply@gmail.com"; }
+    function isOwner() { return signedIn() && "uid" in resource.data && resource.data.uid == request.auth.uid; }
+    function createsOwn() { return signedIn() && request.resource.data.uid == request.auth.uid; }
+
+    match /members/{id}  { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /settings/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /terms/{id}    { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /dues/{id}     { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /sessions/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /expenses/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+    match /payments/{id} { allow read: if signedIn(); allow write: if isAdmin(); }
+
+    match /comments/{id}    { allow read: if signedIn(); allow create: if createsOwn(); allow update, delete: if isAdmin() || isOwner(); }
+    match /annotations/{id} { allow read: if signedIn(); allow create: if createsOwn(); allow update, delete: if isAdmin() || isOwner(); }
+    match /resources/{id}   { allow read: if signedIn(); allow create: if createsOwn(); allow update, delete: if isAdmin() || isOwner(); }
   }
 }

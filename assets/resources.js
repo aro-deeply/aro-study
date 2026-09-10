@@ -10,7 +10,7 @@
      import { mountResources } from "../../assets/resources.js";
      mountResources({ sessionId, me, root: $("#resources"), countEl: $("#res-count") });
 */
-import { memberName, memberById, esc, toast, $, fmtTime, storage, storageRef, uploadBytes, getDownloadURL, deleteObject } from "./app.js";
+import { auth, memberName, memberById, esc, toast, $, fmtTime, storage, storageRef, uploadBytes, getDownloadURL, deleteObject } from "./app.js";
 import { firestoreStore } from "./reader.js";
 
 export const MAX_FILE = 20 * 1024 * 1024;
@@ -33,7 +33,7 @@ const safeName = n => String(n || "file").replace(/[\\/:*?"<>|#%]+/g, "_").slice
 async function storageUpload(file, sessionId) {
   const filePath = `resources/${sessionId}/${Date.now()}_${safeName(file.name)}`;
   const r = storageRef(storage, filePath);
-  await uploadBytes(r, file, { contentType: file.type || "application/octet-stream" });
+  await uploadBytes(r, file, { contentType: file.type || "application/octet-stream", customMetadata: { uid: auth.currentUser?.uid || "" } });
   const fileUrl = await getDownloadURL(r);
   return { fileName: file.name, filePath, fileUrl, fileSize: file.size, fileType: file.type || "" };
 }

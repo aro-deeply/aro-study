@@ -1,4 +1,4 @@
-/* aro-study 공용 계층: Firebase 초기화, 익명 로그인(비밀번호 없음), 이름 선택, Firestore 헬퍼, 공용 유틸.
+/* aro-study 공용 계층: Firebase 초기화, 익명 로그인(멤버)과 총무 로그인, 이름 선택, Firestore 헬퍼, 공용 유틸.
    모든 페이지는 <script type="module"> 에서 이 파일을 import 한다.
 
    사용 예:
@@ -7,7 +7,7 @@
 */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
 import {
-  getAuth, signInAnonymously, onAuthStateChanged,
+  getAuth, signInAnonymously, signInWithEmailAndPassword, signOut, onAuthStateChanged,
   setPersistence, browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-auth.js";
 import {
@@ -15,7 +15,7 @@ import {
   query, where, orderBy, limit, onSnapshot, serverTimestamp, writeBatch, Timestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
-import firebaseConfig from "./firebase-config.js";
+import firebaseConfig, { ADMIN_EMAIL } from "./firebase-config.js";
 
 /* ---------- Firebase ---------- */
 export const app = initializeApp(firebaseConfig);
@@ -117,14 +117,22 @@ export function getMe() { try { return localStorage.getItem(LS_ME) || ""; } catc
 export function setMe(id) { try { id ? localStorage.setItem(LS_ME, id) : localStorage.removeItem(LS_ME); } catch {} }
 
 /* ---------- 인증 ---------- */
-/* 비밀번호 없음(2026-09-10 변경). 처음 열 때 Firebase 익명 로그인을 자동으로 하고 이 기기에 유지한다.
-   Firestore·Storage 규칙의 request.auth != null 은 이 익명 사용자로 통과한다.
-   콘솔 > Authentication > Sign-in method 에서 "익명"이 켜져 있어야 한다. */
+/* 2026-09-10 변경. 멤버는 비밀번호 없이 들어온다: 처음 열 때 Firebase 익명 로그인(기기 토큰, 화면 없음)을 자동으로 하고
+   이 기기에 유지한다. 총무는 admin.html에서 총무 계정(ADMIN_EMAIL)으로 한 번 로그인한다.
+   Firestore·Storage 규칙: 읽기와 의견·메모·자료 쓰기는 접속한 누구나, 관리 데이터 쓰기는 총무 계정만. */
 function authError(code) {
   switch (code) {
     case "auth/operation-not-allowed":
     case "auth/admin-restricted-operation":
       return "익명 로그인이 꺼져 있음 · Firebase 콘솔 > Authentication > Sign-in method에서 '익명' 켜기";
+    case "auth/wrong-password":
+    case "auth/invalid-credential":
+    case "auth/invalid-login-credentials":
+    case "auth/missing-password":
+      return "비밀번호가 맞지 않음";
+    case "auth/user-not-found":
+    case "auth/invalid-email":
+      return "총무 계정 없음 · Firebase 콘솔 > Authentication > Users 확인";
     case "auth/network-request-failed":
       return "네트워크 연결 확인";
     case "auth/too-many-requests":
@@ -164,6 +172,51 @@ async function signInSilently() {
       await new Promise(res => $("button", g).addEventListener("click", res, { once: true }));
     }
   }
+}
+
+/** 지금 접속이 총무 계정(이메일 로그인)인지. 멤버의 익명 접속이면 false. */
+export function isAdminUser() { const u = auth.currentUser; return !!u && !u.isAnonymous; }
+
+/** 총무 로그인 화면(비밀번호 한 칸). 이미 총무 계정이면 바로 통과. 성공하면 이 기기에 유지된다. */
+export function requireAdminAuth() {
+  if (isAdminUser()) return Promise.resolve(auth.currentUser);
+  return new Promise(resolve => {
+    const g = el(`
+      <div class="gate" id="admin-gate">
+        <form class="panel" autocomplete="on">
+          <div class="brand"><small>HR STUDY</small><b>총무 로그인</b></div>
+          <div class="field"><label for="ag-pw">총무 비밀번호</label>
+            <input id="ag-pw" type="password" name="password" autocomplete="current-password" required autofocus>
+            <div class="help">관리 화면에만 필요 · 이 기기에 유지됨</div></div>
+          <div class="err" id="ag-err"></div>
+          <button class="btn block" type="submit">입장</button>
+          <div class="help" style="text-align:center;margin-top:12px"><a href="${ROOT}">홈으로</a></div>
+        </form>
+      </div>`);
+    document.body.appendChild(g);
+    const form = $("form", g), pw = $("#ag-pw", g), err = $("#ag-err", g), btn = $("button", g);
+    setTimeout(() => pw.focus(), 50);
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      err.textContent = ""; btn.disabled = true; btn.textContent = "확인 중";
+      try {
+        await setPersistence(auth, browserLocalPersistence);
+        await signInWithEmailAndPassword(auth, ADMIN_EMAIL, pw.value);
+        g.remove();
+        resolve(auth.currentUser);
+      } catch (ex) {
+        err.textContent = authError(ex.code || "");
+        btn.disabled = false; btn.textContent = "입장";
+        pw.select();
+      }
+    });
+  });
+}
+
+/** 총무 로그인 해제. 다음 방문부터 이 기기는 멤버(익명) 접속이 된다. */
+export async function adminLogout() {
+  await signOut(auth);
+  location.reload();
 }
 
 /** 이름 선택 화면. 선택한 memberId를 resolve. 멤버가 없으면 빈 문자열로 계속. */

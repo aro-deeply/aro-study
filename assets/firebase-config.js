@@ -9,5 +9,7 @@ const firebaseConfig = {
 };
 // ▲▲▲ 여기까지 ▲▲▲
 
-// 로그인은 익명(비밀번호 없음). 콘솔 > Authentication > Sign-in method 에서 "익명"을 켜 둔다.
+// 멤버는 익명 로그인(비밀번호 없음, 콘솔에서 "익명" 켜 둠). 총무만 아래 계정으로 admin.html에서 로그인한다.
+// firestore.rules / storage.rules 의 isAdmin() 에 같은 이메일이 적혀 있다. 바꾸면 둘 다 바꾼다.
+export const ADMIN_EMAIL = "aro.deeply@gmail.com";
 export default firebaseConfig;
