@@ -9,7 +9,7 @@ HR 스터디 모임의 주차별 기록·회비 관리·의견 사이트. GitHub
 - 백엔드는 Firebase(Firestore + Authentication, CDN 모듈 SDK 12.x). 공용 계정 하나로 로그인하고 "이름 선택"으로 작성자를 정한다.
 - `assets/app.js` 인증·이름 선택·상단 바·Firestore 헬퍼·유틸 / `assets/schedule.js` 정기 모임 날짜(n번째 요일)·발제 순서 계산·렌더, `settings` 읽기 / `assets/fund.js` 회비(회비 설정·납부·잔액·보전·월별 가용 금액) 계산·렌더 / `assets/settle.js` 추가 비용 n분의 1 정산 계산·렌더, 주차 페이지 비용 섹션 마운트 / `assets/reader.js` 하이라이트·메모·의견 / `assets/resources.js` 관련 자료(링크·메모 목록) / `assets/style.css` 공통 스타일(aro-briefs 톤).
 - `index.html` 회비 현황·목록·추가 비용 정산 / `admin.html` 총무 입력 / `weeks/<YYYY-MM-DD>/index.html` 주차 페이지 / `templates/week.html` 주차 원본 / `demo/` 로그인 없는 화면 예시.
-- `firestore.rules`는 콘솔에 붙여 넣는 용도. Firebase CLI 배포는 하지 않는다.
+- `firestore.rules`, `storage.rules`는 콘솔에 붙여 넣는 용도. Firebase CLI 배포는 하지 않는다. 관련 자료 파일은 Firebase Storage(`resources/<세션>/`)에 올린다.
 
 ## 데이터 원칙
 

@@ -36,8 +36,8 @@ GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 
 ## 폴더
 
 ```
-index.html  admin.html  manifest.json  firestore.rules  SPEC.md  CLAUDE.md
-assets/   style.css  app.js  schedule.js  fund.js  settle.js  reader.js  firebase-config.js  icons/
+index.html  admin.html  manifest.json  firestore.rules  storage.rules  SPEC.md  CLAUDE.md
+assets/   style.css  app.js  schedule.js  fund.js  settle.js  reader.js  resources.js  firebase-config.js  icons/
 weeks/    YYYY-MM-DD/index.html
 templates/week.html   demo/index.html
 scripts/  new_week.py  check_week.py  session.mjs  setup.mjs  lib/firestore.mjs  tests/

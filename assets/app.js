@@ -14,12 +14,16 @@ import {
   getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, writeBatch, Timestamp
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-storage.js";
 import firebaseConfig, { LOGIN_EMAIL } from "./firebase-config.js";
 
 /* ---------- Firebase ---------- */
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+/** 파일 저장소(관련 자료 첨부). Firebase 콘솔에서 Storage를 켜야 동작한다(storage.rules 참고). */
+export const storage = getStorage(app);
+export { storageRef, uploadBytes, getDownloadURL, deleteObject };
 export {
   collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   query, where, orderBy, limit, onSnapshot, serverTimestamp, writeBatch, Timestamp

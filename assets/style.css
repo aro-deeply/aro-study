@@ -283,7 +283,10 @@ table.dues tr[data-unpaid] td:first-child{color:var(--danger)}
 .res .ttl{font-size:.9375rem;font-weight:700;line-height:1.5}
 .res .ttl a{border-bottom:1px solid var(--line)}
 .res .dom{font-size:.75rem;font-weight:500;color:var(--muted-soft);margin-left:8px}
+.res .file{font-size:.875rem;margin-top:2px}
+.res .file a{border-bottom:1px solid var(--line)}
 .res .nt{color:var(--ink-80);font-size:.9rem;line-height:1.6;white-space:pre-wrap;margin-top:2px}
+input[type=file]{width:100%;font-size:.875rem;padding:8px 0}
 .res .hd{display:flex;align-items:baseline;gap:8px;font-size:.75rem;color:var(--muted-soft);margin-top:4px}
 .res .hd b{color:var(--ink);font-weight:600}
 .res .hd .ops{margin-left:auto}

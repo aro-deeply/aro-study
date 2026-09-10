@@ -25,7 +25,7 @@
   </div>
 
   <h2><em>2</em>관련 자료 <span class="cnt" id="res-count"></span></h2>
-  <p class="secsub">발제 주제와 관련된 글 · 자료 · 생각. 파일은 링크로.</p>
+  <p class="secsub">발제 주제와 관련된 글 · 파일 · 생각.</p>
   <div id="resources"></div>
 
   <h2><em>3</em>다음 모임</h2>
@@ -58,7 +58,8 @@
   // 하이라이트·메모·의견: 메모리 저장소(저장 안 됨). 나는 멤버A.
   const ME = "a";
   window.__reader = mountReader({ sessionId: "2026-09-09", me: ME, store: memoryStore(ANNOTATIONS), root: document.getElementById("content") });
-  window.__resources = mountResources({ sessionId: "2026-09-09", me: ME, store: memoryStore(RESOURCES), root: document.getElementById("resources"), countEl: document.getElementById("res-count") });
+  window.__resources = mountResources({ sessionId: "2026-09-09", me: ME, store: memoryStore(RESOURCES), root: document.getElementById("resources"), countEl: document.getElementById("res-count"),
+    upload: async f => ({ fileName: f.name, filePath: "demo/" + f.name, fileUrl: URL.createObjectURL(f), fileSize: f.size, fileType: f.type }), remove: async () => {} });
   window.__comments = mountComments({ sessionId: "2026-09-09", me: ME, store: memoryStore(COMMENTS), root: document.getElementById("comments"), countEl: document.getElementById("comment-count") });
 
   const S = Object.fromEntries(SESSIONS.map(s => [s.id, s]));
