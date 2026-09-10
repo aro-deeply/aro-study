@@ -77,6 +77,10 @@ export function todayStr() {
 }
 /** 100원 단위 내림 */
 export function floor100(n) { return Math.floor((Number(n) || 0) / 100) * 100; }
+/** 100원 단위 올림 */
+export function ceil100(n) { return Math.ceil((Number(n) || 0) / 100) * 100; }
+/** 발제자처럼 사람을 가리킬 때 이름 뒤에 "님". 빈 이름이면 그대로. */
+export function honor(name) { return name ? `${name} 님` : ""; }
 
 let toastTimer = null;
 export function toast(msg, ms = 1800) {

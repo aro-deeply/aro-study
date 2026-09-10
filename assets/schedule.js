@@ -7,7 +7,7 @@
 
    달 표기는 "YYYY-MM" 문자열로 통일한다.
 */
-import { esc, fmtDate, todayStr, memberName, memberById, db, doc, getDoc } from "./app.js";
+import { esc, fmtDate, todayStr, memberName, honor, db, doc, getDoc } from "./app.js";
 
 export const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 export const WEEK_LABELS = { 1: "첫째", 2: "둘째", 3: "셋째", 4: "넷째", 5: "마지막" };
@@ -112,7 +112,7 @@ const statusTag = st => st === "next" ? '<span class="tag">다음</span>' : st =
 export function renderSchedule(root, sch, opt = {}) {
   const { rows, next, meeting: m, rotation: r } = sch;
   const place = [m.time, m.place].filter(Boolean).join(" · ");
-  const nextName = next?.presenter ? memberName(next.presenter) : "미정";
+  const nextName = next?.presenter ? honor(memberName(next.presenter)) : "미정";
   const head = `
     <div class="st-head">
       <div class="st-total"><div class="lab">다음 모임</div>
@@ -127,14 +127,14 @@ export function renderSchedule(root, sch, opt = {}) {
     <tr${x.status === "next" ? ' class="hl"' : ""}${x.presenter === opt.me ? ' data-me="1"' : ""}>
       <td>${esc(fmtMonth(x.ym))}</td>
       <td data-label="모임일">${fmtDate(x.date, "short")}</td>
-      <td data-label="발제">${x.presenter ? esc(memberName(x.presenter)) : '<span class="soft">미정</span>'}${x.fromSession ? ' <span class="tag">확정</span>' : ""}</td>
+      <td data-label="발제">${x.presenter ? esc(honor(memberName(x.presenter))) : '<span class="soft">미정</span>'}${x.fromSession ? ' <span class="tag">확정</span>' : ""}</td>
       <td data-label="상태">${statusTag(x.status)}${x.session?.page ? ` <a href="${esc(opt.weekHref ? opt.weekHref(x.session) : "weeks/" + x.session.id + "/")}">기록</a>` : ""}</td></tr>`).join("")}</tbody></table>`;
   const cycle = r.order.length
-    ? `<div class="lab" style="margin-top:14px">발제 순서 (${r.order.length}명 순환)</div><div class="chips">${r.order.map((id, i) => `<span class="chip${id === next?.presenter ? "" : " dim"}">${i + 1}. ${esc(memberName(id))}</span>`).join("")}</div>
+    ? `<div class="lab" style="margin-top:14px">발제 순서 (${r.order.length}명 순환)</div><div class="chips">${r.order.map((id, i) => `<span class="chip${id === next?.presenter ? "" : " dim"}">${i + 1}. ${esc(honor(memberName(id)))}</span>`).join("")}</div>
        <div class="secsub" style="margin-top:8px">한 바퀴 돌면 처음으로 돌아갑니다. 특정 달만 바꾸려면 총무가 그 세션의 발제자를 따로 정합니다.</div>`
     : "";
   root.innerHTML = head + table + cycle;
 }
 
 /** 주차 페이지 메타 줄에 쓸 발제자 이름. */
-export function presenterName(session) { return session?.presenter ? memberName(session.presenter) : ""; }
+export function presenterName(session) { return session?.presenter ? honor(memberName(session.presenter)) : ""; }

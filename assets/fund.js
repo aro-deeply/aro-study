@@ -10,12 +10,12 @@
    - expenses:    source "fund"(회비에서, 기본) | "split"(참석자 n분의 1). 없으면 "split"으로 본다.
    - payments:    from "fund" 이면 회비에서 개인에게 보전한 송금(총무가 아닌 사람이 회비 지출을 대신 결제했을 때).
 
-   잔액 = 납부 합계 - 회비 지출 합계 (누가 결제했는지와 무관).
+   잔액 = 납부 합계 + 추가 비용 정산의 회비 귀속분(splitSurplus, settle.js가 계산) - 회비 지출 합계 (누가 결제했는지와 무관).
    보전할 돈 = 총무가 아닌 사람이 결제한 회비 지출 - 그 사람에게 이미 보전한 송금.
    월별 가용 금액(2026-09-10 추가) = 회비 총액(1인 회비 x 대상 인원)을 months로 나눈 배정액 + 이전 달까지 덜 쓴 이월분.
-     k번째 달까지 누적 배정 = round(총액 x k / months) 이라 마지막 달에 정확히 총액이 된다.
+     월 배정액은 100원 단위 올림이고, 마지막 달은 남는 금액(그만큼 적을 수 있다).
 */
-import { esc, fmtWon, fmtDate, todayStr, memberName, memberById } from "./app.js";
+import { esc, fmtWon, fmtDate, todayStr, memberName, memberById, ceil100 } from "./app.js";
 import { ym, addMonths, lastDayOf, fmtMonth, isYm } from "./schedule.js";
 
 export const isFund = x => x && x.source === "fund";
@@ -34,15 +34,18 @@ export function partyName(id) { return id === FUND_ID ? fundLabel : memberName(i
  * @param {object[]} p.payments   전체
  * @param {object[]} p.members
  * @param {string}   [p.today]
+ * @param {number}   [p.splitSurplus]  추가 비용 정산에서 올림으로 더 걷혀 회비로 귀속된 금액(computeSettlement().surplus)
  */
-export function computeFund({ terms = [], dues = [], expenses = [], payments = [], members = [], today = todayStr() }) {
+export function computeFund({ terms = [], dues = [], expenses = [], payments = [], members = [], today = todayStr(), splitSurplus = 0 }) {
   const amt = v => Math.round(Number(v) || 0);
   const adminId = members.find(m => m.role === "admin")?.id || null;
   const active = members.filter(m => m.active !== false);
   const order = id => memberById(id)?.order ?? members.find(m => m.id === id)?.order ?? 999;
 
   const fundExpenses = expenses.filter(isFund).slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  const income = dues.reduce((s, d) => s + amt(d.amount), 0);
+  const duesTotal = dues.reduce((s, d) => s + amt(d.amount), 0);
+  const surplus = amt(splitSurplus);
+  const income = duesTotal + surplus;
   const spent = fundExpenses.reduce((s, x) => s + amt(x.amount), 0);
   const balance = income - spent;
 
@@ -88,7 +91,12 @@ export function computeFund({ terms = [], dues = [], expenses = [], payments = [
   });
   const current = termsOut.find(t => t.isCurrent) || termsOut.find(t => (t.start || "") <= today) || termsOut[0] || null;
 
-  return { adminId, income, spent, balance, fundExpenses, reimburse, reimburseTotal, terms: termsOut, current, duesCount: dues.length };
+  return { adminId, income, duesTotal, surplus, spent, balance, fundExpenses, reimburse, reimburseTotal, terms: termsOut, current, duesCount: dues.length };
+}
+
+/** "납부 x원 + 정산 귀속 y원 - 지출 z원" 한 줄(귀속이 없으면 빼고). */
+export function incomeLine(f) {
+  return `납부 ${fmtWon(f.duesTotal ?? f.income)}원${f.surplus ? ` + 정산 귀속 ${fmtWon(f.surplus)}원` : ""} - 지출 ${fmtWon(f.spent)}원`;
 }
 
 /**
@@ -102,11 +110,12 @@ export function computeBudget({ start, months, total, expenses = [], today = tod
   const startYm = ym(start), curYm = ym(today);
   total = amt(total);
   const rows = [];
+  const monthly = ceil100(total / months);   // 100원 단위 올림, 마지막 달은 남는 금액
   let cumAlloc = 0, cumSpent = 0;
   for (let i = 0; i < months; i++) {
     const m = addMonths(startYm, i);
-    const cum = Math.round(total * (i + 1) / months);
-    const alloc = cum - cumAlloc;
+    const alloc = i < months - 1 ? monthly : total - cumAlloc;
+    const cum = cumAlloc + alloc;
     const carried = cumAlloc - cumSpent;
     const spent = expenses.filter(x => ym(x.date) === m).reduce((s, x) => s + amt(x.amount), 0);
     cumAlloc = cum; cumSpent += spent;
@@ -114,7 +123,7 @@ export function computeBudget({ start, months, total, expenses = [], today = tod
   }
   const endYm = rows[rows.length - 1].ym;
   const status = curYm < startYm ? "before" : curYm > endYm ? "after" : "during";
-  return { months, monthly: Math.round(total / months), total, rows, current: rows.find(r => r.isCurrent) || null, status, startYm, endYm };
+  return { months, monthly, last: rows[rows.length - 1].alloc, total, rows, current: rows.find(r => r.isCurrent) || null, status, startYm, endYm };
 }
 
 /** 회비 기간 문구: "2026.09 ~ 2027.02", 둘 다 비어 있으면 "기간 미정" */
@@ -136,7 +145,7 @@ export function renderBudget(b, opt = {}) {
       <td class="amt" data-label="지출">${r.spent ? fmtWon(r.spent) : '<span class="soft">-</span>'}</td>
       <td class="amt" data-label="남은 금액"><b>${fmtWon(r.remaining)}</b></td></tr>`).join("");
   return `<div class="lab" style="margin-top:16px">월별 가용 금액</div>
-    <div class="secsub" style="margin:0 0 8px">회비 총액 ${fmtWon(b.total)}원을 ${b.months}개월로 나눠 매월 ${fmtWon(b.monthly)}원. 덜 쓴 금액은 다음 달로 이월됩니다.${note ? " " + esc(note) : ""}</div>
+    <div class="secsub" style="margin:0 0 8px">회비 총액 ${fmtWon(b.total)}원을 ${b.months}개월로 나눠 매월 ${fmtWon(b.monthly)}원(100원 단위 올림${b.last !== b.monthly ? `, 마지막 달 ${fmtWon(b.last)}원` : ""}). 덜 쓴 금액은 다음 달로 이월됩니다.${note ? " " + esc(note) : ""}</div>
     <table class="stack budget"><thead><tr><th>월</th><th class="amt">배정</th><th class="amt">이월</th><th class="amt">지출</th><th class="amt">남은 금액</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -158,7 +167,7 @@ export function renderFund(root, f, opt = {}) {
   const head = `
     <div class="st-head">
       <div class="st-total${neg ? " neg" : ""}"><div class="lab">회비 잔액</div><b>${fmtWon(f.balance)}<small>원</small></b>
-        <span>납부 ${fmtWon(f.income)}원 - 지출 ${fmtWon(f.spent)}원${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
+        <span>${incomeLine(f)}${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
       <div class="st-rule"><div class="lab">${t ? esc(t.name || "회비") : "회비 설정 없음"}</div>
         ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명${t.budget ? ` · 월 ${fmtWon(t.budget.monthly)}원 x ${t.budget.months}개월` : ""}<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq" style="font-weight:500">입금 계좌: ${esc(t.account)}</div>` : ""}${t.note ? `<div class="secsub" style="margin:4px 0 0">${esc(t.note)}</div>` : ""}` : "회비 설정 없이 기록된 납부·지출만 합산했습니다."}
         ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액을 넘었습니다. 추가 회비를 걷거나 초과분을 참석자 n분의 1로 나눕니다.</div>' : ""}</div>
@@ -223,7 +232,7 @@ export function renderSessionFund(root, { items = [], f = null, payments = [] })
   root.innerHTML = `
     <div class="st-head">
       <div class="st-total"><div class="lab">이 회차 회비 지출</div><b>${fmtWon(total)}<small>원</small></b><span>항목 ${items.length}건 · 참석자 개인 부담 없음</span></div>
-      <div class="st-rule"><div class="lab">회비 잔액 (현재)</div>${f ? `<div class="eq${f.balance < 0 ? ' style="color:var(--danger)"' : ""}">${fmtWon(f.balance)}원</div>납부 ${fmtWon(f.income)}원 - 지출 ${fmtWon(f.spent)}원${f.current ? ` · ${esc(f.current.name || "")} ${esc(termPeriod(f.current))}` : ""}${budgetLine(f)}` : "잔액을 불러오지 못했습니다."}</div>
+      <div class="st-rule"><div class="lab">회비 잔액 (현재)</div>${f ? `<div class="eq${f.balance < 0 ? ' style="color:var(--danger)"' : ""}">${fmtWon(f.balance)}원</div>${incomeLine(f)}${f.current ? ` · ${esc(f.current.name || "")} ${esc(termPeriod(f.current))}` : ""}${budgetLine(f)}` : "잔액을 불러오지 못했습니다."}</div>
     </div>
     <div class="st-day"><div class="hd"><b>내역</b><span class="n">${items.length}건</span><span class="sum">${fmtWon(total)}원</span></div>${list}</div>
     ${reimbRows.length ? `<div class="lab" style="margin-top:14px">회비에서 보전</div><div class="st-transfers">${reimbRows.join("")}</div>` : ""}`;

@@ -167,7 +167,7 @@
       </div>
       <div class="field"><label>재원</label>
         <div class="seg split-mode" id="e-source"><button type="button" data-v="fund" class="on">회비에서</button><button type="button" data-v="split">참석자 n분의 1</button></div>
-        <div class="help">회비에서 낸 지출은 개인 정산에 잡히지 않고 잔액만 줄어듭니다. 총무가 아닌 사람이 대신 결제했으면 "낸 사람"을 그 사람으로 두세요. 회비에서 보전할 돈으로 표시됩니다.</div>
+        <div class="help">"참석자 n분의 1"은 총액을 인원으로 나눠 100원 단위로 올리고, 차액은 회비로 들어갑니다. 회비에서 낸 지출은 개인 정산에 잡히지 않고 잔액만 줄어듭니다. 총무가 아닌 사람이 대신 결제했으면 "낸 사람"을 그 사람으로 두세요. 회비에서 보전할 돈으로 표시됩니다.</div>
       </div>
       <div class="field hidden" id="e-splitwrap"><label>분배 대상</label>
         <div class="seg split-mode" id="e-splitmode"><button type="button" data-v="attendees" class="on">참석자 전원</button><button type="button" data-v="custom">직접 선택</button></div>
@@ -591,7 +591,7 @@ function resetSessionForm() {
 function renderSessions() {
   if ($("#rt-preview")) renderMeetingPreview();
   $("#session-list").innerHTML = sessions.length ? sessions.map(s => `
-    <div class="rowi"><div class="main">${esc(s.title || "(제목 없음)")}<small>${fmtDate(s.date)} · 참석 ${(s.attendees || []).length}명${s.presenter ? ` · 발제 ${esc(memberName(s.presenter))}` : ""} · <a href="${ROOT}weeks/${s.id}/">주차 페이지</a></small></div>
+    <div class="rowi"><div class="main">${esc(s.title || "(제목 없음)")}<small>${fmtDate(s.date)} · 참석 ${(s.attendees || []).length}명${s.presenter ? ` · 발제 ${esc(memberName(s.presenter))} 님` : ""} · <a href="${ROOT}weeks/${s.id}/">주차 페이지</a></small></div>
     <span class="ops"><button class="link-btn" data-id="${s.id}">수정</button></span></div>`).join("") : '<div class="empty">아직 세션이 없습니다.</div>';
 }
 function renderSessionSelects() {

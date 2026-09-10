@@ -42,7 +42,7 @@
 
   <div id="cum-wrap" class="hidden">
   <h2>추가 비용 정산 <span class="cnt" id="cum-sub"></span></h2>
-  <p class="secsub">회비 밖에서 참석자끼리 n분의 1로 나눈 비용만 모은 결과입니다. 받을 돈은 +, 낼 돈은 -.</p>
+  <p class="secsub">회비 밖에서 참석자끼리 n분의 1로 나눈 비용만 모은 결과입니다. 1인 부담은 100원 단위 올림이고 그 차액은 회비로 들어갑니다. 받을 돈은 +, 낼 돈은 -.</p>
   <div id="cum"></div>
   </div>
 
@@ -50,7 +50,7 @@
 </div>
 
 <script type="module">
-  import { ready, db, esc, $, fmtWon, fmtDiff, fmtDate, todayStr, members, setMembers, memberName, memberById, isAdmin,
+  import { ready, db, esc, $, fmtWon, fmtDiff, fmtDate, todayStr, members, setMembers, memberName, memberById, isAdmin, honor,
            collection, getDocs, query, orderBy } from "./assets/app.js";
   import { computeSettlement } from "./assets/settle.js";
   import { computeFund, renderFund } from "./assets/fund.js";
@@ -87,8 +87,8 @@
     const commentCount = {};
     comments.forEach(c => { if (!c.deleted) commentCount[c.sessionId] = (commentCount[c.sessionId] || 0) + 1; });
     const sessionsById = Object.fromEntries(sessions.map(s => [s.id, s]));
-    const f = computeFund({ terms, dues, expenses, payments, members: members(), today });
     const r = computeSettlement({ expenses, payments, sessionsById, members: members() });
+    const f = computeFund({ terms, dues, expenses, payments, members: members(), today, splitSurplus: r.surplus });
     const sch = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 12 });
     window.__fund = f; window.__r = r; window.__sched = sch;
 
@@ -107,7 +107,7 @@
       : `<b>-</b><span>월별 가용 금액 (회비 설정에 개월 수를 넣으면 표시)</span>`;
     statsEl.innerHTML = `
       <div class="stat"><b>${nx ? fmtDate(nx.date, "short") : "미정"}</b><span>다음 모임 · ${esc(ruleLabel(sch.meeting))}${nextPlan ? "<br>" + esc(nextPlan) : ""}</span></div>
-      <div class="stat"><b>${nx?.presenter ? esc(memberName(nx.presenter)) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>
+      <div class="stat"><b>${nx?.presenter ? esc(honor(memberName(nx.presenter))) : "미정"}</b><span>${nx ? esc(fmtMonth(nx.ym, "short")) + " 발제" : "발제"}${nx?.index ? ` (순서 ${nx.index}/${sch.rotation.order.length})` : ""}</span></div>
       <div class="stat"><b${f.balance < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(f.balance)}${won}</b><span>회비 잔액${cur ? ` · 납부 ${cur.paidCount}/${cur.rows.length}명${unpaid.length ? `, 미납 ${unpaid.length}명` : ""}` : ""}</span></div>
       <div class="stat">${budgetStat}</div>`;
 
@@ -124,7 +124,7 @@
     weeksEl.innerHTML = sessions.length ? sessions.map((s, i) => {
       const no = String(sessions.length - i).padStart(2, "0");
       const facts = [`참석 <b>${(s.attendees || []).length}명</b>`];
-      if (s.presenter) facts.push(`발제 <b>${esc(memberName(s.presenter))}</b>`);
+      if (s.presenter) facts.push(`발제 <b>${esc(honor(memberName(s.presenter)))}</b>`);
       const spent = expenses.filter(x => x.sessionId === s.id).reduce((a, x) => a + (Number(x.amount) || 0), 0);
       if (spent) facts.push(`지출 <b>${fmtWon(spent)}원</b>`);
       if (s.briefCount) facts.push(`브리프 <b>${s.briefCount}편</b>`);
@@ -142,7 +142,7 @@
     $("#cum-wrap").classList.toggle("hidden", !r.count);
     if (r.count) {
       const rows = r.people.map(p => `<tr${p.id === me ? ' class="hl"' : ""}><td>${esc(p.name)}${p.isAdmin ? ' <span class="tag">총무</span>' : ""}</td>
-        <td class="amt" data-label="낸 금액">${fmtWon(p.paid)}</td><td class="amt" data-label="부담액">${fmtWon(p.owed)}</td>
+        <td class="amt" data-label="낸 금액">${fmtWon(p.paid)}</td><td class="amt" data-label="부담액">${fmtWon(p.owed)}${p.fundSurplus ? `<small class="soft"> +회비 ${fmtWon(p.fundSurplus)}</small>` : ""}</td>
         <td class="amt ${p.remaining > 0 ? "plus" : p.remaining < 0 ? "minus" : ""}" data-label="남은 차액">${fmtDiff(p.remaining)}</td></tr>`).join("");
       const tr = r.transfers.length
         ? r.transfers.map(t => `<div class="tr"><span>${esc(memberName(t.from))}</span><span class="arrow">→</span><span>${esc(memberName(t.to))}</span><span class="amt">${fmtWon(t.amount)}원</span></div>`).join("")
@@ -151,7 +151,7 @@
         <table class="cum"><thead><tr><th>멤버</th><th class="amt">낸 금액</th><th class="amt">부담액</th><th class="amt">남은 차액</th></tr></thead><tbody>${rows}</tbody></table>
         <div class="lab" style="margin-top:14px">보낼 돈 (정산 완료 기록 반영 후)</div>
         <div class="st-transfers">${tr}</div>
-        <div class="st-check${r.checks.owedOk ? "" : " bad"}">${r.checks.owedOk ? `합계 검산 완료 (부담액 합 ${fmtWon(r.checks.owedSum)} = 총액 ${fmtWon(r.total)})` : `부담액 합 ${fmtWon(r.checks.owedSum)} ≠ 총액 ${fmtWon(r.total)}`}${r.warnings.length ? " · " + r.warnings.map(esc).join(" · ") : ""}</div>`;
+        <div class="st-check${r.checks.owedOk ? "" : " bad"}">${r.checks.owedOk ? `합계 검산 완료 (부담액 합 ${fmtWon(r.checks.owedSum)} = 총액 ${fmtWon(r.total)}${r.surplus ? ` + 회비 귀속 ${fmtWon(r.surplus)}` : ""})` : `부담액 합 ${fmtWon(r.checks.owedSum)} ≠ 총액 ${fmtWon(r.total)}`}${r.warnings.length ? " · " + r.warnings.map(esc).join(" · ") : ""}</div>`;
     }
   } catch (ex) {
     console.error(ex);

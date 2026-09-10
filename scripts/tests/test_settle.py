@@ -30,29 +30,30 @@ with sync_playwright() as p:
         ctx.close()
     b.close()
 
-# 추가 비용(n분의 1): 회비 지출 3건과 회비 보전 송금은 제외되고 자료 인쇄 13,700원만 남아야 한다.
+# 추가 비용(n분의 1): 회비 지출 3건과 회비 보전 송금은 제외되고 자료 인쇄 13,700원만 남는다. 5명 -> 2,740 -> 2,800 올림, 300원은 회비로.
 check("split total (fund items excluded)", r["total"], 13700)
 check("split count", r["count"], 1)
 check("uniform/n", (r["uniform"], r["n"]), (True, 5))
 owed = {p["id"]: p["owed"] for p in r["people"]}
 paid = {p["id"]: p["paid"] for p in r["people"]}
-check("owed admin(a) = 2700 + rest 200", owed["a"], 2900)
-check("owed b..e", [owed[k] for k in "bcde"], [2700]*4)
+check("owed all 2800 (ceil100)", [owed[k] for k in "abcde"], [2800]*5)
+check("surplus 300 to fund", r["surplus"], 300)
+check("share/uniform", (r["share"], r["uniform"], r["n"]), (2800, True, 5))
 check("paid a", paid["a"], 13700)
 diff = {p["id"]: p["diff"] for p in r["people"]}
-check("diff", diff, {"a": 10800, "b": -2700, "c": -2700, "d": -2700, "e": -2700})
+check("diff", diff, {"a": 10900, "b": -2800, "c": -2800, "d": -2800, "e": -2800})
 rem = {p["id"]: p["remaining"] for p in r["people"]}
-check("remaining after payment d->a (fund->b ignored)", rem, {"a": 8100, "b": -2700, "c": -2700, "d": 0, "e": -2700})
+check("remaining after payment d->a (fund->b ignored, a +300 surplus)", rem, {"a": 8400, "b": -2800, "c": -2800, "d": 0, "e": -2800})
 tr = sorted([(t["from"], t["to"], t["amount"]) for t in r["transfers"]])
-check("transfers", tr, sorted([("b", "a", 2700), ("c", "a", 2700), ("e", "a", 2700)]))
-check("checks ok", (r["checks"]["itemsOk"], r["checks"]["owedOk"], r["checks"]["dupes"]), (True, True, []))
+check("transfers", tr, sorted([("b", "a", 2800), ("c", "a", 2800), ("e", "a", 2800)]))
+check("checks ok (owed sum = total + surplus)", (r["checks"]["itemsOk"], r["checks"]["owedOk"], r["checks"]["owedSum"], r["checks"]["dupes"]), (True, True, 14000, []))
 check("categories (split only)", [(c["name"], c["amount"]) for c in r["categories"]], [("기타", 13700)])
 check("dup detected", r2["checks"]["dupes"], ["자료 인쇄"])
 
-# 회비(기금): 납부 4명 200,000 - 회비 지출 (20,500 + 9,000 + 12,000 + 22,000) = 136,500
-check("fund income", f["income"], 200000)
+# 회비(기금): 납부 4명 200,000 + 정산 귀속 300 - 회비 지출 (20,500 + 9,000 + 12,000 + 22,000) = 136,800
+check("fund income (dues + surplus)", (f["duesTotal"], f["surplus"], f["income"]), (200000, 300, 200300))
 check("fund spent", f["spent"], 63500)
-check("fund balance", f["balance"], 136500)
+check("fund balance", f["balance"], 136800)
 check("fund current term", f["current"]["name"], "2026 하반기 회비")
 check("fund paid/unpaid", (f["current"]["paidCount"], [u["id"] for u in f["current"]["unpaid"]]), (4, ["d"]))
 check("fund expected/collected", (f["current"]["expected"], f["current"]["collected"]), (250000, 200000))
@@ -62,14 +63,15 @@ rb = {x["id"]: (x["paid"], x["done"], x["remaining"]) for x in f["reimburse"]}
 check("reimburse b (paid 9,000, reimbursed 9,000)", rb, {"b": (9000, 9000, 0)})
 check("reimburse total pending", f["reimburseTotal"], 0)
 
-# 월별 가용 금액: 250,000 / 6개월. 9월 배정 41,667 - 지출 41,500 = 167 이월, 10월 41,666 + 167 - 22,000 = 19,833
+# 월별 가용 금액: 250,000 / 6개월 = 41,666.7 -> 41,700 올림, 마지막 달 41,500. 9월 41,700 - 41,500 = 200 이월, 10월 41,700 + 200 - 22,000 = 19,900
 b = f["current"]["budget"]
-check("budget months/monthly/total", (b["months"], b["monthly"], b["total"]), (6, 41667, 250000))
+check("budget months/monthly/last/total", (b["months"], b["monthly"], b["last"], b["total"]), (6, 41700, 41500, 250000))
 check("budget status/current", (b["status"], b["current"]["ym"]), ("during", "2026-10"))
 rows = {r["ym"]: (r["alloc"], r["carried"], r["spent"], r["remaining"]) for r in b["rows"]}
-check("budget 2026-09", rows["2026-09"], (41667, 0, 41500, 167))
-check("budget 2026-10", rows["2026-10"], (41666, 167, 22000, 19833))
-check("budget 2026-11 carry", rows["2026-11"][1], 19833)
+check("budget 2026-09", rows["2026-09"], (41700, 0, 41500, 200))
+check("budget 2026-10", rows["2026-10"], (41700, 200, 22000, 19900))
+check("budget 2026-11 carry", rows["2026-11"][1], 19900)
+check("budget last month 41,500", rows["2027-02"][0], 41500)
 check("budget last month sums to total", sum(r["alloc"] for r in b["rows"]), 250000)
 check("budget last ym", b["rows"][-1]["ym"], "2027-02")
 

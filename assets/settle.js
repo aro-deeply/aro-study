@@ -1,10 +1,10 @@
 /* aro-study 정산: 계산(computeSettlement)과 렌더(renderSettlement), Firestore 연결(mountSettlement).
    화면 구성은 SPEC 6절 "속초 정산서"를 따른다.
 
-   규칙(기본값):
+   규칙(2026-09-10 변경):
    - 각 지출은 분배 대상(splitAmong: "attendees" = 그 세션 참석자 전원, 또는 memberId 배열)에게 균등 분배.
-   - 1인 부담액은 100원 단위로 내림. 나머지(뒷자리)는 총무(role: admin)가 부담한다.
-     총무가 분배 대상에 없으면 낸 사람이, 그도 없으면 첫 번째 대상이 나머지를 부담한다.
+   - 분배 대상이 같은 지출은 합쳐서 나눈다. 1인 부담액 = 합계 / 인원을 100원 단위로 올림.
+   - 올림으로 더 걷히는 차액(surplus)은 회비로 귀속된다: 회비 보관자(총무, role: admin)가 받을 돈에 더해지고 fund.js에서 회비 수입으로 잡는다.
    - 차액 = 낸 금액 - 부담액. +는 받을 돈, -는 낼 돈.
    - 정산 완료(payments)는 보낸 사람의 차액을 올리고 받은 사람의 차액을 내린다. 남은 차액으로 "보낼 돈"을 만든다.
    - 회비에서 쓴 지출(source: "fund")과 회비에서 보전한 송금(from: "fund")은 개인 정산에서 제외한다(fund.js).
@@ -12,9 +12,9 @@
 */
 import {
   db, collection, doc, getDoc, getDocs, query, where,
-  loadMembers, members, memberById, memberName, esc, fmtWon, fmtDiff, fmtDate, floor100
+  loadMembers, members, memberById, memberName, esc, fmtWon, fmtDiff, fmtDate, ceil100
 } from "./app.js";
-import { isSplit, FUND_ID, computeFund, renderSessionFund } from "./fund.js";
+import { isSplit, FUND_ID, fundLabel, computeFund, renderSessionFund } from "./fund.js";
 
 export const CATEGORIES = ["식사", "카페", "장소", "기타"];
 
@@ -34,6 +34,7 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
   const add = (o, k, v) => { o[k] = (o[k] || 0) + v; };
 
   let total = 0;
+  const groups = {};   // 분배 대상이 같은 지출끼리 합산: key -> { ids, amount }
   for (const x of expenses) {
     const amount = Math.round(Number(x.amount) || 0);
     total += amount;
@@ -47,18 +48,27 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
       if (group.length) warnings.push(`"${x.item}"의 분배 대상이 비어 있어 활성 멤버 전원으로 계산했습니다.`);
     }
     if (!group.length) { warnings.push(`"${x.item}"을 나눌 대상이 없습니다.`); continue; }
-
-    const n = group.length;
-    const base = floor100(amount / n);
-    const rest = amount - base * n;
-    const bearer = group.includes(adminId) ? adminId : (group.includes(x.paidBy) ? x.paidBy : group[0]);
-    for (const id of group) add(owed, id, base + (id === bearer ? rest : 0));
+    const key = group.slice().sort().join(",");
+    (groups[key] ||= { ids: group, amount: 0 }).amount += amount;
   }
+  // 그룹별 1인 부담 = 합계 / 인원, 100원 단위 올림. 더 걷히는 차액은 회비로.
+  let surplus = 0;
+  const shares = Object.values(groups).map(g => {
+    const share = ceil100(g.amount / g.ids.length);
+    for (const id of g.ids) add(owed, id, share);
+    surplus += share * g.ids.length - g.amount;
+    return { n: g.ids.length, amount: g.amount, share };
+  });
 
   // 사람별 집계
   const ids = new Set([...Object.keys(paid), ...Object.keys(owed)]);
   const balance = {};
   for (const id of ids) balance[id] = (paid[id] || 0) - (owed[id] || 0);
+  // 회비 귀속분은 회비 보관자(총무)가 받는다.
+  if (surplus) {
+    if (adminId) { add(balance, adminId, surplus); ids.add(adminId); }
+    else warnings.push(`회비 귀속분 ${surplus.toLocaleString("ko-KR")}원을 받을 총무가 없습니다.`);
+  }
   for (const p of payments) {
     const a = Math.round(Number(p.amount) || 0);
     if (p.from) { add(balance, p.from, a); ids.add(p.from); }
@@ -69,7 +79,8 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
     .sort((a, b) => order(a) - order(b) || String(a).localeCompare(String(b)))
     .map(id => ({
       id, name: known.has(id) ? memberName(id) : "(탈퇴 멤버)", isAdmin: id === adminId,
-      paid: paid[id] || 0, owed: owed[id] || 0, diff: (paid[id] || 0) - (owed[id] || 0), remaining: balance[id] || 0
+      paid: paid[id] || 0, owed: owed[id] || 0, diff: (paid[id] || 0) - (owed[id] || 0), remaining: balance[id] || 0,
+      fundSurplus: id === adminId ? surplus : 0
     }));
 
   // 보낼 돈: 남은 차액이 -인 사람 -> +인 사람 (큰 금액부터 그리디)
@@ -97,19 +108,19 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
     date, items: byDateMap[date], subtotal: byDateMap[date].reduce((s, x) => s + Math.round(Number(x.amount) || 0), 0)
   }));
 
-  // 검산
+  // 검산: 부담액 합 = 총액 + 회비 귀속분
   const owedSum = Object.values(owed).reduce((s, v) => s + v, 0);
   const subSum = byDate.reduce((s, d) => s + d.subtotal, 0);
   const seen = new Set(), dup = [];
   for (const x of expenses) { const k = `${x.date}|${x.item}|${x.amount}`; if (seen.has(k)) dup.push(x.item); seen.add(k); }
-  const checks = { itemsOk: subSum === total, owedOk: owedSum === total || expenses.length === 0, dupes: dup, owedSum, subSum };
+  const checks = { itemsOk: subSum === total, owedOk: owedSum === total + surplus || expenses.length === 0, dupes: dup, owedSum, subSum };
 
-  // 정산 기준 문구: 모든 지출이 참석자 전원 균등이면 단일 식으로 표시
-  const groups = new Set(expenses.map(x => Array.isArray(x.splitAmong) ? x.splitAmong.slice().sort().join(",") : "attendees:" + (sessionsById[x.sessionId]?.attendees || []).slice().sort().join(",")));
-  const uniform = groups.size <= 1;
-  const n = uniform && expenses.length ? (Array.isArray(expenses[0].splitAmong) ? expenses[0].splitAmong.length : (sessionsById[expenses[0].sessionId]?.attendees || []).length) : 0;
+  // 정산 기준 문구: 분배 대상이 하나면 단일 식으로 표시
+  const uniform = shares.length <= 1;
+  const n = uniform && shares.length ? shares[0].n : 0;
+  const share = uniform && shares.length ? shares[0].share : 0;
 
-  return { total, count: expenses.length, people, transfers, categories, byDate, checks, warnings, adminId, uniform, n };
+  return { total, count: expenses.length, people, transfers, categories, byDate, checks, warnings, adminId, uniform, n, share, surplus };
 }
 
 /* ---------- 렌더 ---------- */
@@ -120,14 +131,14 @@ export function renderSettlement(root, r, opt = {}) {
     return;
   }
   const rule = r.uniform && r.n
-    ? `참석 ${r.n}인 균등, 100원 단위. 뒷자리는 총무 부담.<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(floor100(r.total / r.n))}원</div>`
-    : `항목마다 분배 대상 기준으로 균등, 100원 단위. 뒷자리는 총무 부담.`;
+    ? `참석 ${r.n}인 균등, 100원 단위 올림. 차액은 회비로.<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원${r.surplus ? ` (${fmtWon(r.surplus)}원 회비 귀속)` : ""}</div>`
+    : `분배 대상이 같은 항목끼리 합쳐 균등, 100원 단위 올림. 차액${r.surplus ? ` ${fmtWon(r.surplus)}원` : ""}은 회비로.`;
 
   const people = r.people.map(p => `
     <div class="st-person${p.isAdmin ? " is-admin" : ""}">
-      <div class="nm">${esc(p.name)}${p.isAdmin ? ' <span class="tag">총무 · 뒷자리 부담</span>' : ""}</div>
+      <div class="nm">${esc(p.name)}${p.isAdmin ? ' <span class="tag">총무 · 회비 보관</span>' : ""}</div>
       <b>${fmtWon(p.owed)}원</b>
-      <span>낸 돈 ${fmtWon(p.paid)} · <em class="diff ${p.diff > 0 ? "plus" : p.diff < 0 ? "minus" : ""}">${fmtDiff(p.diff)}</em></span>
+      <span>낸 돈 ${fmtWon(p.paid)} · <em class="diff ${p.diff > 0 ? "plus" : p.diff < 0 ? "minus" : ""}">${fmtDiff(p.diff)}</em>${p.fundSurplus ? ` · ${fundLabel} 귀속 +${fmtWon(p.fundSurplus)}` : ""}</span>
     </div>`).join("");
 
   const catTotal = r.categories.reduce((s, c) => s + c.amount, 0) || 1;
@@ -154,7 +165,7 @@ export function renderSettlement(root, r, opt = {}) {
         r.checks.dupes.length ? `중복 의심: ${r.checks.dupes.map(esc).join(", ")}` : "",
         ...r.warnings.map(esc)
       ].filter(Boolean).join(" · ")
-    : `중복 없음 · 합계 검산 완료 (항목 합 ${fmtWon(r.checks.subSum)} = 총액, 부담액 합 ${fmtWon(r.checks.owedSum)} = 총액)`;
+    : `중복 없음 · 합계 검산 완료 (항목 합 ${fmtWon(r.checks.subSum)} = 총액, 부담액 합 ${fmtWon(r.checks.owedSum)} = 총액${r.surplus ? ` + 회비 귀속 ${fmtWon(r.surplus)}` : ""})`;
 
   root.innerHTML = `
     <div class="st-head">
@@ -166,6 +177,7 @@ export function renderSettlement(root, r, opt = {}) {
     <div class="lab">상세 내역</div>${days}
     <div class="lab" style="margin-top:18px">보낼 돈</div>
     <div class="st-transfers">${transfers}${done}</div>
+    ${r.surplus && r.adminId ? `<div class="secsub">올림으로 더 걷히는 ${fmtWon(r.surplus)}원은 총무가 받는 금액에 포함돼 회비로 들어갑니다.</div>` : ""}
     <div class="st-check${bad ? " bad" : ""}">${checkLine}</div>`;
 }
 
@@ -182,16 +194,20 @@ export async function fetchSessionData(sessionId) {
   return { session, expenses, payments };
 }
 
-/** 회비 잔액 계산에 필요한 전체 자료(회비 설정, 납부, 회비 지출, 회비 보전 송금). */
+/** 회비 잔액 계산에 필요한 전체 자료(회비 설정, 납부, 지출 전체, 회비 보전 송금, 세션). 추가 비용의 회비 귀속분도 계산한다. */
 export async function fetchFundData() {
-  const [tSnap, dSnap, eSnap, pSnap] = await Promise.all([
+  const [tSnap, dSnap, eSnap, pSnap, sSnap] = await Promise.all([
     getDocs(collection(db, "terms")),
     getDocs(collection(db, "dues")),
-    getDocs(query(collection(db, "expenses"), where("source", "==", "fund"))),
-    getDocs(query(collection(db, "payments"), where("from", "==", FUND_ID)))
+    getDocs(collection(db, "expenses")),
+    getDocs(query(collection(db, "payments"), where("from", "==", FUND_ID))),
+    getDocs(collection(db, "sessions"))
   ]);
   const rows = s => s.docs.map(d => ({ id: d.id, ...d.data() }));
-  return { terms: rows(tSnap), dues: rows(dSnap), fundExpenses: rows(eSnap), fundPayments: rows(pSnap) };
+  const expenses = rows(eSnap), sessions = rows(sSnap);
+  const sessionsById = Object.fromEntries(sessions.map(s => [s.id, s]));
+  const splitSurplus = computeSettlement({ expenses, sessionsById, members: members() }).surplus;
+  return { terms: rows(tSnap), dues: rows(dSnap), fundExpenses: expenses.filter(x => !isSplit(x)), fundPayments: rows(pSnap), sessions, splitSurplus };
 }
 
 /** 주차 페이지용: 세션 하나의 비용(회비 지출 + 추가 비용 정산)을 root에 렌더. 반환값으로 세션 문서도 돌려준다. */
@@ -203,7 +219,7 @@ export async function mountSettlement(root, sessionId, opt = {}) {
     const fundItems = expenses.filter(x => !isSplit(x));
     let f = null;
     if (fundItems.length) {
-      try { const fd = await fetchFundData(); f = computeFund({ terms: fd.terms, dues: fd.dues, expenses: fd.fundExpenses, payments: fd.fundPayments, members: members() }); }
+      try { const fd = await fetchFundData(); f = computeFund({ terms: fd.terms, dues: fd.dues, expenses: fd.fundExpenses, payments: fd.fundPayments, members: members(), splitSurplus: fd.splitSurplus }); }
       catch (ex) { console.error(ex); }
     }
     const r = computeSettlement({ expenses, payments, sessionsById: { [sessionId]: session || {} }, members: members() });

@@ -45,7 +45,7 @@
 </div>
 
 <script type="module">
-  import { ready, esc, memberName, fmtDate, $ } from "../../assets/app.js";
+  import { ready, esc, memberName, honor, fmtDate, $ } from "../../assets/app.js";
   import { mountSettlement } from "../../assets/settle.js";
   import { mountReader, mountComments } from "../../assets/reader.js";
 
@@ -58,7 +58,7 @@
   const att = $("#attendees");
   if (s?.attendees?.length) { att.textContent = s.attendees.map(memberName).join(", ") + ` (${s.attendees.length}명)`; att.className = ""; }
   else att.textContent = s ? "미정" : "세션 정보 없음";
-  if (s?.presenter) { $("#presenter").textContent = memberName(s.presenter); $("#presenter-wrap").classList.remove("hidden"); }
+  if (s?.presenter) { $("#presenter").textContent = honor(memberName(s.presenter)); $("#presenter-wrap").classList.remove("hidden"); }
   // 정적 계획이 비어 있으면 Firestore의 nextPlan을 보여 준다.
   const np = $("#next-plan p");
   if (np && !np.textContent.trim() && s?.nextPlan) np.textContent = s.nextPlan;

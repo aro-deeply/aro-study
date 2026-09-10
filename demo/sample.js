@@ -36,7 +36,7 @@ export const EXPENSES = [
 ];
 export const PAYMENTS = [
   { id: "p1", sessionId: "2026-09-08", from: "fund", to: "b", amount: 9000, date: "2026-09-09", note: "카페 대신 결제분 보전" },
-  { id: "p2", sessionId: "2026-09-08", from: "d", to: "a", amount: 2700, date: "2026-09-09" },
+  { id: "p2", sessionId: "2026-09-08", from: "d", to: "a", amount: 2800, date: "2026-09-09" },
 ];
 export const COMMENTS = [
   { id: "c1", sessionId: "2026-09-08", author: "b", text: "신입 온보딩 과제를 가져오는 건 좋은데, 팀별 편차가 클 것 같아요. 공통 양식이 있으면 좋겠습니다.", parentId: null, createdAt: new Date(Date.now() - 7200e3) },
