@@ -15,9 +15,12 @@
      "terms":    [{ "name": "회비", "fee": 50000, "months": 6, "start": "2026-10-01", "end": "", "account": "", "note": "" }],
      "sessions": [{ "id": "2026-09-09", "title": "OT", "presenter": "이름", "attendees": "all" | ["이름", ...], "nextPlan": "" }],
      "expenses": [{ "sessionId": "2026-09-09", "date": "2026-09-09", "item": "...", "amount": 4000, "category": "기타",
-                    "source": "split" | "fund", "paidBy": "admin" | "이름", "splitAmong": "attendees" | ["이름", ...], "note": "" }]
+                    "source": "split" | "fund", "paidBy": "admin" | "이름", "splitAmong": "attendees" | ["이름", ...], "note": "" }],
+     "dues":     [{ "term": "회비", "amount": 50000, "date": "2026-09-11", "members": ["이름", ...], "note": "" }],   // 회비 납부, term은 회비 설정 이름(같은 이름이 여럿이면 "termStart"로 시작일 지정)
+     "payments": [{ "sessionId": "2026-09-09", "from": ["이름", ...] | "이름", "to": "admin" | "이름", "amount": 15000, "date": "2026-09-11", "note": "" }]   // 추가 비용 정산 송금(from 여러 명이면 각각 한 건)
    }
-   같은 이름·시작일의 회비 설정, 같은 세션·항목·금액의 지출이 이미 있으면 건너뛴다(두 번 실행해도 중복되지 않음).
+   같은 이름·시작일의 회비 설정, 같은 세션·항목·금액의 지출, 같은 회비·사람의 납부, 같은 세션·보낸 사람·받은 사람·금액의 송금이 이미 있으면 건너뛴다(두 번 실행해도 중복되지 않음).
+   송금의 보낸 사람과 받은 사람이 같으면(총무 본인 부담분) 기록하지 않고 건너뛴다.
 */
 import fs from "node:fs";
 import readline from "node:readline";
@@ -94,10 +97,56 @@ for (const x of plan.expenses || []) {
   else { ops.push({ label, run: () => addDocTo(token, "expenses", f) }); expTotal += f.amount; }
 }
 
+const existingDues = plan.dues?.length ? await listAll(token, "dues") : [];
+const allTerms = plan.dues?.length ? (existingTerms.length ? existingTerms : await listAll(token, "terms")) : [];
+let duesTotal = 0;
+for (const d of plan.dues || []) {
+  const name = String(d.term || "회비");
+  const cands = allTerms.filter(t => (t.name || "회비") === name && (!d.termStart || (t.start || "") === d.termStart)).sort((a, b) => String(b.start || "").localeCompare(String(a.start || "")));
+  if (!cands.length) throw new Error(`회비 설정을 찾을 수 없음: "${name}"${d.termStart ? ` (시작 ${d.termStart})` : ""}`);
+  if (cands.length > 1 && !d.termStart) throw new Error(`회비 설정 "${name}"이 ${cands.length}개라 termStart(시작일)로 지정 필요: ${cands.map(t => t.start || "시작 없음").join(", ")}`);
+  const term = cands[0];
+  const amount = Math.round(Number(d.amount) || 0);
+  if (amount <= 0) throw new Error(`회비 납부 금액이 0: ${JSON.stringify(d)}`);
+  const names = Array.isArray(d.members) ? d.members : [d.members].filter(Boolean);
+  if (!names.length) throw new Error(`회비 납부 대상(members)이 비어 있음: ${JSON.stringify(d)}`);
+  for (const n of names) {
+    const m = byName(n);
+    const f = { termId: term.id, memberId: m.id, amount, date: String(d.date || new Date().toISOString().slice(0, 10)), note: String(d.note || ""), createdAt: new Date(), createdBy: admin?.id || "" };
+    const dup = existingDues.find(x => x.termId === term.id && x.memberId === m.id);
+    const label = `dues: [${term.name || "회비"}] ${m.name} ${amount.toLocaleString()}원 · ${f.date}`;
+    if (dup) ops.push({ label: label + `  -> 이미 납부 기록 있음(${Math.round(Number(dup.amount) || 0).toLocaleString()}원), 건너뜀`, skip: true });
+    else { ops.push({ label, run: () => addDocTo(token, "dues", f) }); duesTotal += amount; }
+  }
+}
+const existingPay = plan.payments?.length ? await listAll(token, "payments") : [];
+let payTotal = 0;
+const partyId = v => v === "admin" ? (admin?.id || "") : (v === "fund" ? "fund" : byName(v).id);
+for (const p of plan.payments || []) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(p.sessionId || "")) throw new Error("payments[].sessionId 는 YYYY-MM-DD 형식");
+  const amount = Math.round(Number(p.amount) || 0);
+  if (amount <= 0) throw new Error(`송금 금액이 0: ${JSON.stringify(p)}`);
+  const to = partyId(p.to || "admin");
+  if (!to) throw new Error("송금 받는 사람(to)이 비어 있음 (총무가 없으면 \"admin\" 사용 불가)");
+  const froms = Array.isArray(p.from) ? p.from : [p.from].filter(Boolean);
+  if (!froms.length) throw new Error(`송금 보낸 사람(from)이 비어 있음: ${JSON.stringify(p)}`);
+  for (const n of froms) {
+    const from = partyId(n);
+    const f = { sessionId: String(p.sessionId), from, to, amount, date: String(p.date || new Date().toISOString().slice(0, 10)), note: String(p.note || ""), createdAt: new Date() };
+    const label = `payments: [${f.sessionId}] ${nameOf(from)} -> ${nameOf(to)} ${amount.toLocaleString()}원 · ${f.date}`;
+    if (from === to) { ops.push({ label: label + "  -> 본인 부담분(보낸 사람 = 받은 사람), 기록 안 함", skip: true }); continue; }
+    const dup = existingPay.find(x => x.sessionId === f.sessionId && x.from === from && x.to === to && Number(x.amount) === amount);
+    if (dup) ops.push({ label: label + "  -> 이미 있음, 건너뜀", skip: true });
+    else { ops.push({ label, run: () => addDocTo(token, "payments", f) }); payTotal += amount; }
+  }
+}
+
 /* ---------- 보여 주고 확인 ---------- */
 console.log(`\n넣을 내용 (${file}):`);
 ops.forEach(o => say(o.label));
 if (expTotal) say(`지출 합계 ${expTotal.toLocaleString()}원`);
+if (duesTotal) say(`회비 납부 합계 ${duesTotal.toLocaleString()}원`);
+if (payTotal) say(`송금 합계 ${payTotal.toLocaleString()}원`);
 if (!admin) console.log("\n주의: 총무(role admin)가 없어 paidBy \"admin\" 항목의 낸 사람이 비어 있습니다.");
 const todo = ops.filter(o => !o.skip);
 if (!todo.length) { console.log("\n새로 넣을 것이 없습니다."); process.exit(0); }

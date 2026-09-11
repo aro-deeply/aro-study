@@ -12,7 +12,7 @@
 */
 import {
   db, collection, doc, getDoc, getDocs, query, where,
-  loadMembers, members, memberById, memberName, esc, fmtWon, fmtDiff, fmtDate, ceil100
+  loadMembers, members, memberById, memberName, esc, fmtWon, fmtDate, ceil100
 } from "./app.js";
 import { isSplit, FUND_ID, fundLabel, computeFund, renderSessionFund } from "./fund.js";
 
@@ -135,11 +135,20 @@ export function renderSettlement(root, r, opt = {}) {
     ? `참석 ${r.n}명 균등 · 100원 단위 올림<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원</div>`
     : `분배 대상이 같은 항목끼리 균등 · 100원 단위 올림`;
 
+  // 둘째 줄: 송금(payments)까지 반영한 현재 상태. 보낼 돈 / 받을 돈 / 완료(보낸 날짜). 낸 돈은 직접 결제한 사람만.
+  const sent = {};
+  for (const q of (opt.payments || []).filter(q => q.from !== FUND_ID && q.to !== FUND_ID)) (sent[q.from] ||= []).push(q);
+  const state = p => {
+    if (p.remaining < 0) return `<em class="diff minus">보낼 돈 ${fmtWon(-p.remaining)}</em>`;
+    if (p.remaining > 0) return `<em class="diff plus">받을 돈 ${fmtWon(p.remaining)}</em>`;
+    const last = (sent[p.id] || []).map(q => q.date || "").sort().pop();
+    return `<em class="diff plus">완료</em>${last ? ` · ${esc(fmtDate(last, "short"))}` : ""}`;
+  };
   const people = r.people.map(p => `
     <div class="st-person${p.isAdmin ? " is-admin" : ""}">
       <div class="nm">${esc(p.name)}${p.isAdmin ? ' <span class="tag">총무 · 회비 보관</span>' : ""}</div>
       <b>${fmtWon(p.owed)}원</b>
-      <span>낸 돈 ${fmtWon(p.paid)} · <em class="diff ${p.diff > 0 ? "plus" : p.diff < 0 ? "minus" : ""}">${fmtDiff(p.diff)}</em></span>
+      <span>${p.paid ? `낸 돈 ${fmtWon(p.paid)} · ` : ""}${state(p)}</span>
     </div>`).join("");
   // 올림으로 더 걷히는 금액: 총무 부담이 아니라 총무가 받아서 회비로 보관하는 돈
   const surplusCard = r.surplus ? `
