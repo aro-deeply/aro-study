@@ -116,7 +116,6 @@
     if (upcoming) { const when = [s.time, s.place].filter(Boolean).join(" · "); if (when) facts.push(esc(when)); }
     const spent = expenses.filter(x => x.sessionId === s.id).reduce((a, x) => a + (Number(x.amount) || 0), 0);
     if (spent) facts.push(`지출 <b>${fmtWon(spent)}원</b>`);
-    if (s.briefCount) facts.push(`브리프 <b>${s.briefCount}편</b>`);
     if (!upcoming) facts.push(`의견 <b>${commentCount[s.id] || 0}개</b>`);
     const tag = s.page ? "" : (upcoming ? ' <span class="tag">예정</span>' : ' <span class="tag">기록 작성 전</span>');
     const inner = `<div class="meta"><b>WEEK ${no}</b><span>${fmtDate(s.date)}</span></div>
@@ -130,9 +129,9 @@
     const wrap = document.createElement("div");
     for (const s of list.filter(s => expenses.some(x => x.sessionId === s.id && isSplit(x)))) {
       const blk = document.createElement("div"); blk.className = "settle-block";
-      blk.innerHTML = `<h3>${fmtDate(s.date)} ${esc(s.title || "")}${s.page ? ` <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}" style="font-weight:500;font-size:.8125rem">기록</a>` : ""}</h3><div class="body"></div>`;
+      blk.innerHTML = `<h3>${fmtDate(s.date)}${s.page ? ` <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}" style="font-weight:500;font-size:.8125rem">기록</a>` : ""}</h3><div class="body"></div>`;
       const rs = computeSettlement({ expenses: expenses.filter(x => x.sessionId === s.id), payments: payments.filter(p => p.sessionId === s.id), sessionsById, members: members() });
-      renderSettlement(blk.querySelector(".body"), rs, { payments: payments.filter(p => p.sessionId === s.id), subtitle: `참석 ${(s.attendees || []).length}명`, totalLabel: "추가 비용" });
+      renderSettlement(blk.querySelector(".body"), rs, { payments: payments.filter(p => p.sessionId === s.id), subtitle: "", totalLabel: "추가 비용" });
       wrap.appendChild(blk);
     }
     return wrap.innerHTML;
@@ -165,11 +164,12 @@
     const row = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 1, from: m }).rows[0];
     const s = ss[ss.length - 1] || null;
     const status = row.status === "next" ? '<span class="tag">다음</span>' : row.status === "done" ? '<span class="tag ok">완료</span>' : row.status === "passed" ? '<span class="tag warn">기록 없음</span>' : '<span class="tag">예정</span>';
-    const when = [s?.time || sch.meeting.time, s?.place || sch.meeting.place].filter(Boolean).join(" · ");
+    const mt = s?.time || sch.meeting.time, mp = s?.place || sch.meeting.place;
+    const under = s ? (mp ? esc(mp) : "") : esc(ruleLabel(sch.meeting, false)) + (mp ? " · " + esc(mp) : "");
     const head = `
       <div class="st-head">
-        <div class="st-total"><div class="lab">${esc(fmtMonth(m))} 모임</div><b>${fmtDate(row.date, "short")}</b>
-          <span>${s ? esc(when) : esc(ruleLabel(sch.meeting, false)) + (when ? " · " + esc(when) : "")}</span></div>
+        <div class="st-total"><div class="lab">${esc(fmtMonth(m))} 모임</div><b>${fmtDate(row.date, "short")}${mt ? ` <small>${esc(mt)}</small>` : ""}</b>
+          ${under ? `<span>${under}</span>` : ""}</div>
         <div class="st-rule"><div class="lab">발제 ${status}</div>
           <div class="eq">${row.presenter ? esc(honor(memberName(row.presenter))) : "미정"}</div>
           ${s ? `${esc(s.title || "제목 미정")}${s.page ? ` · <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}">기록 보기</a>` : ""}<br>참석 ${(s.attendees || []).length}명 · 의견 ${commentCount[s.id] || 0}개` : "등록된 모임 없음"}</div>
@@ -223,7 +223,7 @@
       const mine = rs.transfers.find(t => t.from === me);
       const left = rs.transfers.reduce((a, t) => a + t.amount, 0);
       notes.push(item(`정산 남음 ${rs.transfers.length}명 · ${fmtWon(left)}원`,
-        `${fmtDate(s.date, "short")} ${esc(s.title || "")}${mine ? ` · 내 몫 ${fmtWon(mine.amount)}원 → ${esc(memberName(mine.to))}` : ""}`,
+        `${fmtDate(s.date, "short")}${mine ? ` · 내 몫 ${fmtWon(mine.amount)}원 → ${esc(memberName(mine.to))}` : ""}`,
         `<a href="#" data-tab="months" data-month="${ym(s.date)}">월별 탭</a>`));
     }
     $("#sum-notes").innerHTML = notes.length
@@ -231,7 +231,8 @@
       : (cur ? '<div class="note ok" style="margin-top:16px">미납과 남은 정산 없음</div>' : "");
 
     // 최근 모임 3개
-    $("#sum-count").textContent = sessions.length ? `${sessions.length}회` : "";
+    const held = sessions.filter(s => (s.date || "") < today || s.page).length;   // 예정 카드는 횟수에 넣지 않는다
+    $("#sum-count").textContent = held ? `${held}회` : "";
     $("#sum-weeks").innerHTML = sessions.length
       ? sessions.slice(0, 3).map(weekCard).join("") + (sessions.length > 3 ? `<div class="secsub" style="margin-top:6px">지난 모임은 <a href="#" data-tab="months">월별 탭</a>에서.</div>` : "")
       : `<div class="empty">기록된 모임 없음${isAdmin() ? ' · <a href="admin.html#sessions">관리</a>에서 세션 만들기' : ""}</div>`;

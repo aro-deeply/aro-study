@@ -123,7 +123,7 @@ export function renderSchedule(root, sch, opt = {}) {
   const head = `
     <div class="st-rule sched-rule">
       <div class="eq clip">${esc(ruleLabel(m))}${m.place ? " · " + esc(m.place) : ""}</div>
-      ${r.order.length ? `발제 순서 ${r.order.length}명 · ${esc(fmtMonth(r.startMonth))}부터 매월 1명 · 일정 변경은 참석자 간 협의` : "발제 순서 없음" + (opt.adminHint ? ` · <a href="${esc(opt.adminHint)}#schedule">관리</a>에서 설정` : "")}
+      ${r.order.length ? `발제자 ${r.order.length}명 · 순서는 상호 합의로 변경 가능` : "발제 순서 없음" + (opt.adminHint ? ` · <a href="${esc(opt.adminHint)}#schedule">관리</a>에서 설정` : "")}
       ${opt.nextPlan ? `<div style="margin-top:4px">${esc(opt.nextPlan)}</div>` : ""}
     </div>`;
   const table = `<table class="stack sched"><thead><tr><th>월</th><th>모임일</th><th>발제</th><th>상태</th></tr></thead><tbody>${rows.map(x => `

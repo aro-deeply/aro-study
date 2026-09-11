@@ -222,6 +222,12 @@ table.dues tr[data-unpaid] td:first-child{color:var(--danger)}
 .st-rule{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;font-size:.8125rem;color:var(--ink-80);line-height:1.6}
 .st-rule .lab{margin-bottom:4px}
 .st-rule .eq{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;margin-top:4px}
+.st-rule .kv{display:flex;align-items:baseline;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)}
+.st-rule .kv:last-child{border-bottom:0;padding-bottom:0}
+.st-rule .kv span{flex:0 0 2.2em;font-size:.6875rem;letter-spacing:.08em;font-weight:700;color:var(--accent)}
+.st-rule .kv b{font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums;min-width:0}
+.st-rule .kv.acct b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st-rule .kv.acct .copy-btn{margin-left:auto}
 @media (max-width:560px){.st-head{grid-template-columns:1fr}}
 
 .st-people{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:0 0 22px}

@@ -152,7 +152,6 @@ export function termPeriod(t) {
 /** 회비 현황과 주차 페이지에 같이 쓰는 월별 가용 금액 표. */
 export function renderBudget(b, opt = {}) {
   if (!b) return "";
-  const note = b.status === "before" ? `${fmtMonth(b.startYm, "short")}부터` : b.status === "after" ? `${fmtMonth(b.endYm)} 종료` : "";
   const rows = b.rows.map(r => `<tr${r.isCurrent ? ' class="hl"' : ""}${r.remaining < 0 ? ' data-over="1"' : ""}>
       <td>${esc(fmtMonth(r.ym))}${r.isCurrent ? ' <span class="tag">이달</span>' : ""}</td>
       <td class="amt" data-label="배정">${fmtWon(r.alloc)}</td>
@@ -160,7 +159,6 @@ export function renderBudget(b, opt = {}) {
       <td class="amt" data-label="지출">${r.spent ? fmtWon(r.spent) : '<span class="soft">-</span>'}</td>
       <td class="amt" data-label="남은 금액"><b>${fmtWon(r.remaining)}</b></td></tr>`).join("");
   return `<div class="lab" style="margin-top:16px">월별 가용 금액</div>
-    <div class="secsub" style="margin:0 0 8px">월 ${fmtWon(b.monthly)}원${b.last !== b.monthly ? ` · 마지막 달 ${fmtWon(b.last)}원` : ""}${note ? " · " + esc(note) : ""}</div>
     <table class="stack budget"><thead><tr><th>월</th><th class="amt">배정</th><th class="amt">이월</th><th class="amt">지출</th><th class="amt">남은 금액</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -184,7 +182,12 @@ export function renderFund(root, f, opt = {}) {
       <div class="st-total${neg ? " neg" : ""}"><div class="lab">회비 잔액</div><b>${fmtWon(f.balance)}<small>원</small></b>
         <span>${incomeLine(f)}${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
       <div class="st-rule"><div class="lab">${t ? esc(t.name || "회비") : "회비 설정 없음"}</div>
-        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq acct"><span>계좌 ${esc(t.account)}</span><button type="button" class="copy-btn" data-copy="${esc(accountNumber(t.account))}">복사</button></div>` : ""}` : "회비 설정 없음 · 납부와 지출만 합산"}
+        ${t ? `<div class="kv"><span>기간</span><b>${esc(termPeriod(t))}</b></div>
+        <div class="kv"><span>1인</span><b>${fmtWon(t.fee)}원</b></div>
+        <div class="kv"><span>대상</span><b>${t.rows.length}명</b></div>
+        <div class="kv"><span>납부</span><b>${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)}원 / ${fmtWon(t.expected)}원</b></div>
+        ${t.spent ? `<div class="kv"><span>지출</span><b>${fmtWon(t.spent)}원</b></div>` : ""}
+        ${t.account ? `<div class="kv acct"><span>계좌</span><b>${esc(t.account)}</b><button type="button" class="copy-btn" data-copy="${esc(accountNumber(t.account))}">복사</button></div>` : ""}` : "회비 설정 없음 · 납부와 지출만 합산"}
         ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액 초과</div>' : ""}</div>
     </div>`;
 

@@ -55,7 +55,7 @@ check가 FAIL이면 고치고 다시 돌린다. 로컬 확인이 필요하면 `p
 node scripts/session.mjs get <날짜>
 ```
 
-- 있으면: `node scripts/session.mjs set <날짜> --title "<제목>" --next "<다음 계획>" --briefs <브리프 수> --page` (참석자·발제자는 유지됨)
+- 있으면: `node scripts/session.mjs set <날짜> --title "<제목>" --next "<다음 계획>" --page` (참석자·발제자는 유지됨)
 - 없으면: 위 명령에 `--attendees "이름1,이름2,..."`를 붙인다. 이름은 `node scripts/session.mjs members` 목록과 정확히 같아야 한다. 참석자를 모르면 `--attendees` 없이 만들고 사용자에게 admin.html에서 체크하라고 알린다.
 - 발제자: 새 세션이면 발제 순서(`settings/rotation`)에서 그 달의 사람이 자동으로 들어간다. 메모에 발제자가 따로 있으면 `--presenter "이름"`으로 넣는다. 본문 HTML에는 발제자 이름을 쓰지 않는다(메타 줄이 Firestore에서 채운다).
 - 다음 모임 계획(`--next`)에 날짜를 쓸 때는 정기 규칙(매월 둘째 수요일)으로 계산한 날짜인지 확인한다. 목록 화면의 "다음 모임"은 규칙으로 자동 계산되므로 계획 문구에는 준비물·장소 위주로 쓴다.
