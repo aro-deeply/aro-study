@@ -39,7 +39,7 @@
 <div id="topbar"></div>
 <div class="wrap">
   <div id="note"></div>
-  <div id="loading">불러오는 중<span class="slow">연결이 느립니다 · 잠시 기다리거나 새로고침</span></div>
+  <div id="loading">불러오는 중<span class="slow">연결이 느립니다 · 잠시 기다리거나 새로고침</span></div>
 
   <div class="stats one" id="stats">
     <div class="stat"><b class="soft">…</b><span>다음 모임</span></div>
@@ -113,7 +113,7 @@
     const upcoming = (s.date || "") >= today && !s.page;   // 아직 열리지 않은 모임(예정)
     const facts = upcoming ? [] : [`참석 <b>${(s.attendees || []).length}명</b>`];
     if (s.presenter) facts.push(`발제 <b>${esc(honor(memberName(s.presenter)))}</b>`);
-    if (upcoming) { const when = [s.time, s.place].filter(Boolean).join(" · "); if (when) facts.push(esc(when)); }
+    if (upcoming) { const when = [s.time, s.place].filter(Boolean).join(" · "); if (when) facts.push(esc(when)); }
     const spent = expenses.filter(x => x.sessionId === s.id).reduce((a, x) => a + (Number(x.amount) || 0), 0);
     if (spent) facts.push(`지출 <b>${fmtWon(spent)}원</b>`);
     if (s.briefCount) facts.push(`브리프 <b>${s.briefCount}편</b>`);
@@ -165,14 +165,14 @@
     const row = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 1, from: m }).rows[0];
     const s = ss[ss.length - 1] || null;
     const status = row.status === "next" ? '<span class="tag">다음</span>' : row.status === "done" ? '<span class="tag ok">완료</span>' : row.status === "passed" ? '<span class="tag warn">기록 없음</span>' : '<span class="tag">예정</span>';
-    const when = [s?.time || sch.meeting.time, s?.place || sch.meeting.place].filter(Boolean).join(" · ");
+    const when = [s?.time || sch.meeting.time, s?.place || sch.meeting.place].filter(Boolean).join(" · ");
     const head = `
       <div class="st-head">
         <div class="st-total"><div class="lab">${esc(fmtMonth(m))} 모임</div><b>${fmtDate(row.date, "short")}</b>
-          <span>${s ? esc(when) : esc(ruleLabel(sch.meeting, false)) + (when ? " · " + esc(when) : "")}</span></div>
+          <span>${s ? esc(when) : esc(ruleLabel(sch.meeting, false)) + (when ? " · " + esc(when) : "")}</span></div>
         <div class="st-rule"><div class="lab">발제 ${status}</div>
           <div class="eq">${row.presenter ? esc(honor(memberName(row.presenter))) : "미정"}</div>
-          ${s ? `${esc(s.title || "제목 미정")}${s.page ? ` · <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}">기록 보기</a>` : ""}<br>참석 ${(s.attendees || []).length}명 · 의견 ${commentCount[s.id] || 0}개` : "등록된 모임 없음"}</div>
+          ${s ? `${esc(s.title || "제목 미정")}${s.page ? ` · <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}">기록 보기</a>` : ""}<br>참석 ${(s.attendees || []).length}명 · 의견 ${commentCount[s.id] || 0}개` : "등록된 모임 없음"}</div>
       </div>`;
 
     // 회비: 이달 배정·이월·지출·남은 금액
@@ -182,14 +182,14 @@
          <div class="stats mini"><div class="stat"><b>${fmtWon(br.alloc)}${won}</b><span>배정</span></div><div class="stat"><b>${fmtWon(br.carried)}${won}</b><span>이월</span></div><div class="stat"><b>${fmtWon(br.spent)}${won}</b><span>회비 지출</span></div><div class="stat"><b${br.remaining < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(br.remaining)}${won}</b><span>남은 금액</span></div></div>`
       : `<div class="lab" style="margin-top:18px">회비</div><div class="secsub">${b ? `회비 사용 기간 아님 (${esc(fmtMonth(b.startYm))} ~ ${esc(fmtMonth(b.endYm))})` : "회비 설정 없음."}</div>`;
     const mDues = dues.filter(d => ym(d.date) === m).sort((a, b2) => (a.date || "").localeCompare(b2.date || ""));
-    const duesLine = mDues.length ? `<div class="secsub">이달 납부 ${mDues.length}건 · ${fmtWon(mDues.reduce((a, d) => a + (Number(d.amount) || 0), 0))}원: ${mDues.map(d => esc(memberName(d.memberId))).join(", ")}</div>` : "";
+    const duesLine = mDues.length ? `<div class="secsub">이달 납부 ${mDues.length}건 · ${fmtWon(mDues.reduce((a, d) => a + (Number(d.amount) || 0), 0))}원: ${mDues.map(d => esc(memberName(d.memberId))).join(", ")}</div>` : "";
 
     // 지출 내역 (회비 지출 + 추가 비용)
     const mx = expenses.filter(x => ym(x.date) === m).sort((a, b2) => (a.date || "").localeCompare(b2.date || ""));
     const tot = mx.reduce((a, x) => a + (Number(x.amount) || 0), 0);
     const items = mx.length ? `<div class="lab" style="margin-top:18px">지출 내역</div>
       <div class="st-day"><div class="hd"><b>${esc(fmtMonth(m, "short"))}</b><span class="n">${mx.length}건</span><span class="sum">${fmtWon(tot)}원</span></div>
-      ${mx.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category || "")}${isFund(x) ? "" : " · n분의 1"}</small></span><span class="by">${esc(memberName(x.paidBy))}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("")}</div>`
+      ${mx.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category || "")}${isFund(x) ? "" : " · n분의 1"}</small></span><span class="by">${esc(memberName(x.paidBy))}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("")}</div>`
       : `<div class="lab" style="margin-top:18px">지출 내역</div><div class="empty">지출 없음</div>`;
 
     // 추가 비용 정산서
@@ -209,7 +209,7 @@
       : [ruleLabel(sch.meeting, false), name && `발제 ${name}`].filter(Boolean);
     statsEl.innerHTML = `
       <div class="stat"><b>${nx ? fmtDate(nx.date, "short") + (t ? " " + esc(t) : "") : "미정"}</b>
-        <span class="clip">다음 모임${parts.length ? " · " + parts.map(esc).join(" · ") : ""}</span></div>`;
+        <span class="clip">다음 모임${parts.length ? " · " + parts.map(esc).join(" · ") : ""}</span></div>`;
 
     // 확인할 것: 미납, 보전할 돈, 남은 정산. 제목 / 세부 / 링크를 나눠 한 줄씩.
     const item = (title, detail, link, warn) => `<div class="rowi${warn ? " unpaid" : ""}"><div class="main">${title}<small>${detail}</small></div><span class="ops">${link}</span></div>`;
@@ -222,8 +222,8 @@
     for (const { s, rs } of openSplit) {
       const mine = rs.transfers.find(t => t.from === me);
       const left = rs.transfers.reduce((a, t) => a + t.amount, 0);
-      notes.push(item(`정산 남음 ${rs.transfers.length}명 · ${fmtWon(left)}원`,
-        `${fmtDate(s.date, "short")} ${esc(s.title || "")}${mine ? ` · 내 몫 ${fmtWon(mine.amount)}원 → ${esc(memberName(mine.to))}` : ""}`,
+      notes.push(item(`정산 남음 ${rs.transfers.length}명 · ${fmtWon(left)}원`,
+        `${fmtDate(s.date, "short")} ${esc(s.title || "")}${mine ? ` · 내 몫 ${fmtWon(mine.amount)}원 → ${esc(memberName(mine.to))}` : ""}`,
         `<a href="#" data-tab="months" data-month="${ym(s.date)}">월별 탭</a>`));
     }
     $("#sum-notes").innerHTML = notes.length
@@ -234,7 +234,7 @@
     $("#sum-count").textContent = sessions.length ? `${sessions.length}회` : "";
     $("#sum-weeks").innerHTML = sessions.length
       ? sessions.slice(0, 3).map(weekCard).join("") + (sessions.length > 3 ? `<div class="secsub" style="margin-top:6px">지난 모임은 <a href="#" data-tab="months">월별 탭</a>에서.</div>` : "")
-      : `<div class="empty">기록된 모임 없음${isAdmin() ? ' · <a href="admin.html#sessions">관리</a>에서 세션 만들기' : ""}</div>`;
+      : `<div class="empty">기록된 모임 없음${isAdmin() ? ' · <a href="admin.html#sessions">관리</a>에서 세션 만들기' : ""}</div>`;
   }
 
   /* ---------- 시작 ---------- */
@@ -246,7 +246,7 @@
       const S = await import("./demo/sample.js");
       setMembers(S.MEMBERS); me = "a"; today = S.TODAY || today;
       sessions = S.SESSIONS; expenses = S.EXPENSES; payments = S.PAYMENTS; comments = S.COMMENTS; terms = S.TERMS; dues = S.DUES; settings = S.SETTINGS;
-      $("#note").innerHTML = '<div class="note">화면 예시 · 이름과 금액은 가명</div>';
+      $("#note").innerHTML = '<div class="note">화면 예시 · 이름과 금액은 가명</div>';
     } else {
       ({ me } = await ready());
       const [sSnap, eSnap, pSnap, cSnap, tSnap, dSnap, st] = await Promise.all([

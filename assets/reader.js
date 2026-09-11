@@ -134,7 +134,7 @@ export function mountReader({ sessionId, me = "", store, root, title } = {}) {
   }
   async function edit(id) {
     const h = state.find(x => x.id === id); if (!h) return;
-    if (h.author !== me) { toast(`${who(h.author)}의 표시 · 본인 것만 수정 가능`); return; }
+    if (h.author !== me) { toast(`${who(h.author)}의 표시 · 본인 것만 수정 가능`); return; }
     const v = window.prompt('메모 수정 (비우면 메모만 삭제, "삭제"라고 쓰면 하이라이트도 삭제)', h.note || "");
     if (v === null) return;
     const t = v.trim();
@@ -163,7 +163,7 @@ export function mountReader({ sessionId, me = "", store, root, title } = {}) {
     }
     if (!state.length) lines.push("(표시한 구간이 없음)");
     const out = lines.join("\n");
-    const done = () => toast("복사됨 · AI 대화창에 붙여 넣기");
+    const done = () => toast("복사됨 · AI 대화창에 붙여 넣기");
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(out).then(done, () => { fallback(out); done(); });
     else { fallback(out); done(); }
     return out;

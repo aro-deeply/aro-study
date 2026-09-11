@@ -41,8 +41,8 @@ async function storageDelete(filePath) { try { await deleteObject(storageRef(sto
 /** Storage 미설정·권한 오류를 사람이 읽을 말로. */
 function uploadError(ex) {
   const code = ex?.code || "";
-  if (/unauthorized|unauthenticated/.test(code)) return "파일 저장소 권한 없음 · 총무가 storage.rules를 게시했는지 확인";
-  if (/retry-limit|unknown|object-not-found|bucket-not-found|project-not-found/.test(code) || /404|CORS|Failed to fetch/i.test(ex?.message || "")) return "파일 저장소가 아직 준비되지 않음 · 링크로 올리거나 총무에게 문의";
+  if (/unauthorized|unauthenticated/.test(code)) return "파일 저장소 권한 없음 · 총무가 storage.rules를 게시했는지 확인";
+  if (/retry-limit|unknown|object-not-found|bucket-not-found|project-not-found/.test(code) || /404|CORS|Failed to fetch/i.test(ex?.message || "")) return "파일 저장소가 아직 준비되지 않음 · 링크로 올리거나 총무에게 문의";
   if (/quota/.test(code)) return "파일 저장소 용량 초과";
   return "파일 업로드 실패: " + (ex?.message || ex);
 }
@@ -70,10 +70,10 @@ export function mountResources({ sessionId, me = "", store, root, countEl, uploa
       <form class="res-form" id="res-form">
         <div class="row stack">
           <div class="field"><label for="res-title">제목</label><input id="res-title" type="text" placeholder="자료 이름 또는 한 줄 요약" autocomplete="off"${dis}></div>
-          <div class="field"><label for="res-url">링크</label><input id="res-url" type="text" inputmode="url" placeholder="선택 · 글, 영상 주소" autocomplete="off"${dis}></div>
+          <div class="field"><label for="res-url">링크</label><input id="res-url" type="text" inputmode="url" placeholder="선택 · 글, 영상 주소" autocomplete="off"${dis}></div>
         </div>
-        <div class="field"><label for="res-file">파일</label><input id="res-file" type="file" accept="${FILE_ACCEPT}"${dis}><div class="help">선택 · 20MB 이하 · PDF, 이미지, 오피스 문서, 한글, 압축</div></div>
-        <div class="field"><textarea id="res-note" style="min-height:72px" placeholder="${me ? "선택 · 관련된 이유, 볼 만한 부분" : "상단에서 이름을 선택하면 올릴 수 있음"}"${dis}></textarea></div>
+        <div class="field"><label for="res-file">파일</label><input id="res-file" type="file" accept="${FILE_ACCEPT}"${dis}><div class="help">선택 · 20MB 이하 · PDF, 이미지, 오피스 문서, 한글, 압축</div></div>
+        <div class="field"><textarea id="res-note" style="min-height:72px" placeholder="${me ? "선택 · 관련된 이유, 볼 만한 부분" : "상단에서 이름을 선택하면 올릴 수 있음"}"${dis}></textarea></div>
         <div class="actions"><button class="btn" type="submit" id="res-submit"${dis}>올리기</button></div>
       </form>`;
     if (countEl) countEl.textContent = list.length ? `${list.length}건` : "";
@@ -88,7 +88,7 @@ export function mountResources({ sessionId, me = "", store, root, countEl, uploa
     const title = titleIn || (file ? file.name : "");
     if (!title) { toast("제목 입력 필요"); return; }
     if (rawUrl && !url) { toast("링크 주소 형식 확인"); return; }
-    if (file && file.size > MAX_FILE) { toast(`파일이 큼 · ${fmtSize(file.size)} (20MB 이하)`); return; }
+    if (file && file.size > MAX_FILE) { toast(`파일이 큼 · ${fmtSize(file.size)} (20MB 이하)`); return; }
     const btn = $("#res-submit", root); busy = true; btn.disabled = true; btn.textContent = file ? "올리는 중" : "저장 중";
     try {
       let attach = {};

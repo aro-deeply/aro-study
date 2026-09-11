@@ -128,25 +128,25 @@ export function computeSettlement({ expenses = [], payments = [], sessionsById =
 export function renderSettlement(root, r, opt = {}) {
   const title = opt.title || "정산";
   if (!r.count) {
-    root.innerHTML = opt.emptyText === "" ? "" : `<div class="empty">${esc(opt.emptyText || "등록된 지출 없음")}${opt.adminHint ? ' · <a href="' + esc(opt.adminHint) + '#expenses">관리</a>에서 입력' : ""}</div>`;
+    root.innerHTML = opt.emptyText === "" ? "" : `<div class="empty">${esc(opt.emptyText || "등록된 지출 없음")}${opt.adminHint ? ' · <a href="' + esc(opt.adminHint) + '#expenses">관리</a>에서 입력' : ""}</div>`;
     return;
   }
   const rule = r.uniform && r.n
-    ? `참석 ${r.n}명 균등 · 100원 단위 올림<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원</div>`
-    : `분배 대상이 같은 항목끼리 균등 · 100원 단위 올림`;
+    ? `참석 ${r.n}명 균등 · 100원 단위 올림<div class="eq">${fmtWon(r.total)} / ${r.n} = ${fmtWon(r.total / r.n)} → ${fmtWon(r.share)}원</div>`
+    : `분배 대상이 같은 항목끼리 균등 · 100원 단위 올림`;
 
   const people = r.people.map(p => `
     <div class="st-person${p.isAdmin ? " is-admin" : ""}">
-      <div class="nm">${esc(p.name)}${p.isAdmin ? ' <span class="tag">총무 · 회비 보관</span>' : ""}</div>
+      <div class="nm">${esc(p.name)}${p.isAdmin ? ' <span class="tag">총무 · 회비 보관</span>' : ""}</div>
       <b>${fmtWon(p.owed)}원</b>
-      <span>낸 돈 ${fmtWon(p.paid)} · <em class="diff ${p.diff > 0 ? "plus" : p.diff < 0 ? "minus" : ""}">${fmtDiff(p.diff)}</em></span>
+      <span>낸 돈 ${fmtWon(p.paid)} · <em class="diff ${p.diff > 0 ? "plus" : p.diff < 0 ? "minus" : ""}">${fmtDiff(p.diff)}</em></span>
     </div>`).join("");
   // 올림으로 더 걷히는 금액: 총무 부담이 아니라 총무가 받아서 회비로 보관하는 돈
   const surplusCard = r.surplus ? `
     <div class="st-person" style="border-style:dashed">
       <div class="nm">${fundLabel} 적립</div>
       <b>${fmtWon(r.surplus)}원</b>
-      <span>${fmtWon(r.share || 0)} x ${r.n || "n"}명 - ${fmtWon(r.total)}${r.adminId ? ` · 총무 보관` : ""}</span>
+      <span>${fmtWon(r.share || 0)} x ${r.n || "n"}명 - ${fmtWon(r.total)}${r.adminId ? ` · 총무 보관` : ""}</span>
     </div>` : "";
 
   const catTotal = r.categories.reduce((s, c) => s + c.amount, 0) || 1;
@@ -157,7 +157,7 @@ export function renderSettlement(root, r, opt = {}) {
   const days = r.byDate.map(d => `
     <div class="st-day">
       <div class="hd"><b>${fmtDate(d.date, "short")}</b><span class="n">${d.items.length}건</span><span class="sum">${fmtWon(d.subtotal)}원</span></div>
-      ${d.items.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${esc(x.category || "")}${x.note ? " · " + esc(x.note) : ""}</small></span><span class="by">${esc(memberName(x.paidBy))}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("")}
+      ${d.items.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${esc(x.category || "")}${x.note ? " · " + esc(x.note) : ""}</small></span><span class="by">${esc(memberName(x.paidBy))}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("")}
     </div>`).join("");
 
   const bad = !r.checks.itemsOk || !r.checks.owedOk || r.checks.dupes.length || r.warnings.length;
@@ -167,12 +167,12 @@ export function renderSettlement(root, r, opt = {}) {
         !r.checks.owedOk ? `부담액 합 ${fmtWon(r.checks.owedSum)} ≠ 총액 ${fmtWon(r.total)}` : "",
         r.checks.dupes.length ? `중복 의심: ${r.checks.dupes.map(esc).join(", ")}` : "",
         ...r.warnings.map(esc)
-      ].filter(Boolean).join(" · ")
-    : `검산 완료 · 항목 합 ${fmtWon(r.checks.subSum)} = 총액 · 부담액 합 ${fmtWon(r.checks.owedSum)} = 총액${r.surplus ? ` + 귀속 ${fmtWon(r.surplus)}` : ""}`;
+      ].filter(Boolean).join(" · ")
+    : `검산 완료 · 항목 합 ${fmtWon(r.checks.subSum)} = 총액 · 부담액 합 ${fmtWon(r.checks.owedSum)} = 총액${r.surplus ? ` + 귀속 ${fmtWon(r.surplus)}` : ""}`;
 
   root.innerHTML = `
     <div class="st-head">
-      <div class="st-total"><div class="lab">${esc(opt.totalLabel || "총 지출")}</div><b>${fmtWon(r.total)}<small>원</small></b><span>${esc(opt.subtitle || "")}${opt.subtitle ? " · " : ""}${r.count}건</span></div>
+      <div class="st-total"><div class="lab">${esc(opt.totalLabel || "총 지출")}</div><b>${fmtWon(r.total)}<small>원</small></b><span>${esc(opt.subtitle || "")}${opt.subtitle ? " · " : ""}${r.count}건</span></div>
       <div class="st-rule"><div class="lab">정산 기준</div>${rule}</div>
     </div>
     <div class="st-people">${people}${surplusCard}</div>

@@ -124,7 +124,7 @@ function authError(code) {
   switch (code) {
     case "auth/operation-not-allowed":
     case "auth/admin-restricted-operation":
-      return "익명 로그인이 꺼져 있음 · Firebase 콘솔 > Authentication > Sign-in method에서 '익명' 켜기";
+      return "익명 로그인이 꺼져 있음 · Firebase 콘솔 > Authentication > Sign-in method에서 '익명' 켜기";
     case "auth/wrong-password":
     case "auth/invalid-credential":
     case "auth/invalid-login-credentials":
@@ -132,11 +132,11 @@ function authError(code) {
       return "비밀번호가 맞지 않음";
     case "auth/user-not-found":
     case "auth/invalid-email":
-      return "총무 계정 없음 · Firebase 콘솔 > Authentication > Users 확인";
+      return "총무 계정 없음 · Firebase 콘솔 > Authentication > Users 확인";
     case "auth/network-request-failed":
       return "네트워크 연결 확인";
     case "auth/too-many-requests":
-      return "시도가 너무 많음 · 잠시 후 다시";
+      return "시도가 너무 많음 · 잠시 후 다시";
     default:
       return "접속 실패 (" + code + ")";
   }
@@ -187,7 +187,7 @@ export function requireAdminAuth() {
           <div class="brand"><small>HR STUDY</small><b>총무 로그인</b></div>
           <div class="field"><label for="ag-pw">총무 비밀번호</label>
             <input id="ag-pw" type="password" name="password" autocomplete="current-password" required autofocus>
-            <div class="help">관리 화면에만 필요 · 이 기기에 유지됨</div></div>
+            <div class="help">관리 화면에만 필요 · 이 기기에 유지됨</div></div>
           <div class="err" id="ag-err"></div>
           <button class="btn block" type="submit">입장</button>
           <div class="help" style="text-align:center;margin-top:12px"><a href="${ROOT}">홈으로</a></div>
@@ -231,9 +231,9 @@ export function showNamePicker(list = activeMembers()) {
           ${list.length ? `
           <div class="field"><label for="np-sel">이름</label>
             <select id="np-sel" required><option value="" disabled${cur ? "" : " selected"}>선택</option>${opts}</select>
-            <div class="help">이 기기에 기억됨 · 상단 이름에서 변경</div></div>
+            <div class="help">이 기기에 기억됨 · 상단 이름에서 변경</div></div>
           <button class="btn block" type="submit">계속</button>` : `
-          <div class="note">등록된 멤버 없음 · 총무가 관리 화면에서 추가</div>
+          <div class="note">등록된 멤버 없음 · 총무가 관리 화면에서 추가</div>
           <button class="btn block" type="submit">이름 없이 계속</button>`}
         </form>
       </div>`);
@@ -278,7 +278,7 @@ export async function ready(opt = {}) {
   if (!user) user = await signInSilently();
   let list;
   try { list = await loadMembers(); }
-  catch (ex) { console.error(ex); toast("멤버 목록을 읽지 못함 · Firestore 규칙 확인"); list = []; }
+  catch (ex) { console.error(ex); toast("멤버 목록을 읽지 못함 · Firestore 규칙 확인"); list = []; }
   let me = getMe();
   const valid = me && list.some(m => m.id === me && m.active !== false);
   if (requireName && !valid) me = await showNamePicker();

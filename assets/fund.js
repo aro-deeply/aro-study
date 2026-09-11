@@ -160,7 +160,7 @@ export function renderBudget(b, opt = {}) {
       <td class="amt" data-label="지출">${r.spent ? fmtWon(r.spent) : '<span class="soft">-</span>'}</td>
       <td class="amt" data-label="남은 금액"><b>${fmtWon(r.remaining)}</b></td></tr>`).join("");
   return `<div class="lab" style="margin-top:16px">월별 가용 금액</div>
-    <div class="secsub" style="margin:0 0 8px">월 ${fmtWon(b.monthly)}원${b.last !== b.monthly ? ` · 마지막 달 ${fmtWon(b.last)}원` : ""}${note ? " · " + esc(note) : ""}</div>
+    <div class="secsub" style="margin:0 0 8px">월 ${fmtWon(b.monthly)}원${b.last !== b.monthly ? ` · 마지막 달 ${fmtWon(b.last)}원` : ""}${note ? " · " + esc(note) : ""}</div>
     <table class="stack budget"><thead><tr><th>월</th><th class="amt">배정</th><th class="amt">이월</th><th class="amt">지출</th><th class="amt">남은 금액</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
@@ -175,16 +175,16 @@ const statusTag = r => r.status === "paid" ? '<span class="tag ok">납부</span>
 export function renderFund(root, f, opt = {}) {
   const t = opt.termId ? f.terms.find(x => x.id === opt.termId) : f.current;
   if (!t && !f.duesCount && !f.fundExpenses.length) {
-    root.innerHTML = `<div class="empty">회비 설정 없음${opt.adminHint ? ' · <a href="' + esc(opt.adminHint) + '#dues">관리</a>에서 설정' : ""}</div>`;
+    root.innerHTML = `<div class="empty">회비 설정 없음${opt.adminHint ? ' · <a href="' + esc(opt.adminHint) + '#dues">관리</a>에서 설정' : ""}</div>`;
     return;
   }
   const neg = f.balance < 0;
   const head = `
     <div class="st-head">
       <div class="st-total${neg ? " neg" : ""}"><div class="lab">회비 잔액</div><b>${fmtWon(f.balance)}<small>원</small></b>
-        <span>${incomeLine(f)}${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
+        <span>${incomeLine(f)}${f.reimburseTotal ? ` · 보전 대기 ${fmtWon(f.reimburseTotal)}원` : ""}</span></div>
       <div class="st-rule"><div class="lab">${t ? esc(t.name || "회비") : "회비 설정 없음"}</div>
-        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq acct"><span>계좌 ${esc(t.account)}</span><button type="button" class="copy-btn" data-copy="${esc(accountNumber(t.account))}">복사</button></div>` : ""}` : "회비 설정 없음 · 납부와 지출만 합산"}
+        ${t ? `${esc(termPeriod(t))} · 1인 ${fmtWon(t.fee)}원 · 대상 ${t.rows.length}명<div class="eq">납부 ${t.paidCount}/${t.rows.length}명 · ${fmtWon(t.collected)} / ${fmtWon(t.expected)}원${t.spent ? ` · 이 기간 지출 ${fmtWon(t.spent)}원` : ""}</div>${t.account ? `<div class="eq acct"><span>계좌 ${esc(t.account)}</span><button type="button" class="copy-btn" data-copy="${esc(accountNumber(t.account))}">복사</button></div>` : ""}` : "회비 설정 없음 · 납부와 지출만 합산"}
         ${neg ? '<div class="eq" style="color:var(--danger)">지출이 납부액 초과</div>' : ""}</div>
     </div>`;
 
@@ -201,7 +201,7 @@ export function renderFund(root, f, opt = {}) {
 
   const others = f.terms.filter(x => x !== t);
   const past = others.length
-    ? `<div class="lab" style="margin-top:16px">이전 회비 설정</div>${others.map(x => `<div class="rowi"><div class="main">${esc(x.name || "회비")}<small>${esc(termPeriod(x))} · 1인 ${fmtWon(x.fee)}원 · 납부 ${x.paidCount}/${x.rows.length}명</small></div><span class="amt">${fmtWon(x.collected)}</span></div>`).join("")}`
+    ? `<div class="lab" style="margin-top:16px">이전 회비 설정</div>${others.map(x => `<div class="rowi"><div class="main">${esc(x.name || "회비")}<small>${esc(termPeriod(x))} · 1인 ${fmtWon(x.fee)}원 · 납부 ${x.paidCount}/${x.rows.length}명</small></div><span class="amt">${fmtWon(x.collected)}</span></div>`).join("")}`
     : "";
 
   root.innerHTML = `${head}
@@ -228,7 +228,7 @@ export function renderSessionFund(root, { items = [], f = null, payments = [] })
   if (!items.length) { root.innerHTML = ""; return; }
   const total = items.reduce((s, x) => s + (Math.round(Number(x.amount) || 0)), 0);
   const adminId = f?.adminId;
-  const list = items.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category || "")}${x.note ? " · " + esc(x.note) : ""}</small></span><span class="by">${esc(memberName(x.paidBy))}${x.paidBy && adminId && x.paidBy !== adminId ? ' <span class="tag">대신 결제</span>' : ""}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("");
+  const list = items.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category || "")}${x.note ? " · " + esc(x.note) : ""}</small></span><span class="by">${esc(memberName(x.paidBy))}${x.paidBy && adminId && x.paidBy !== adminId ? ' <span class="tag">대신 결제</span>' : ""}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("");
   const others = items.filter(x => x.paidBy && adminId && x.paidBy !== adminId);
   const doneTo = {};
   payments.filter(p => p.from === FUND_ID).forEach(p => { doneTo[p.to] = (doneTo[p.to] || 0) + (Math.round(Number(p.amount) || 0)); });
@@ -243,8 +243,8 @@ export function renderSessionFund(root, { items = [], f = null, payments = [] })
   }
   root.innerHTML = `
     <div class="st-head">
-      <div class="st-total"><div class="lab">이 회차 회비 지출</div><b>${fmtWon(total)}<small>원</small></b><span>${items.length}건 · 개인 부담 없음</span></div>
-      <div class="st-rule"><div class="lab">회비 잔액 (현재)</div>${f ? `<div class="eq${f.balance < 0 ? ' style="color:var(--danger)"' : ""}">${fmtWon(f.balance)}원</div>${incomeLine(f)}${f.current ? ` · ${esc(f.current.name || "")} ${esc(termPeriod(f.current))}` : ""}${budgetLine(f)}` : "잔액 불러오기 실패"}</div>
+      <div class="st-total"><div class="lab">이 회차 회비 지출</div><b>${fmtWon(total)}<small>원</small></b><span>${items.length}건 · 개인 부담 없음</span></div>
+      <div class="st-rule"><div class="lab">회비 잔액 (현재)</div>${f ? `<div class="eq${f.balance < 0 ? ' style="color:var(--danger)"' : ""}">${fmtWon(f.balance)}원</div>${incomeLine(f)}${f.current ? `<br>${esc(f.current.name || "")} ${esc(termPeriod(f.current))}` : ""}${budgetLine(f)}` : "잔액 불러오기 실패"}</div>
     </div>
     <div class="st-day"><div class="hd"><b>내역</b><span class="n">${items.length}건</span><span class="sum">${fmtWon(total)}원</span></div>${list}</div>
     ${reimbRows.length ? `<div class="lab" style="margin-top:14px">회비에서 보전</div><div class="st-transfers">${reimbRows.join("")}</div>` : ""}`;
