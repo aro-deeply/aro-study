@@ -80,10 +80,10 @@
           <span class="cols"><span>${r.spent ? fmtWon(r.spent) + "원" : '<span class="soft">-</span>'}</span><span class="${r.remaining < 0 ? "unpaid" : "v"}">${r.remaining < 0 ? `${fmtWon(-r.remaining)}원 초과` : `${fmtWon(r.remaining)}원`}</span></span></div>`).join("");
       const gap = t.expected - t.collected;
       const futureLine = future.length
-        ? `<div class="pr"><span class="grow" style="color:var(--muted)">${mo(future[0].ym)}${future.length > 1 ? "부터 매달" : "에"} 예산이 더해집니다${b.last !== b.monthly ? ` (${mo(future[future.length - 1].ym)}은 ${fmtWon(b.last)}원)` : ""}.</span></div>` : "";
+        ? `<div class="pr"><span class="grow" style="color:var(--muted)">${mo(future[0].ym)}${future.length > 1 ? "부터 매달" : "에"} 예산이 더해집니다.${b.last !== b.monthly ? `<br>${mo(future[future.length - 1].ym)}은 ${fmtWon(b.last)}원입니다.` : ""}</span></div>` : "";
       $("#budget").innerHTML = `<section class="sec"><h2>월별 예산</h2><div class="panel">
         <h3>매달 ${fmtWon(b.monthly)}원</h3>
-        <div class="lead">덜 쓴 돈은 다음 달로 넘어갑니다. 예산은 회비를 모두 걷었을 때 기준입니다.${gap > 0 ? ` 아직 걷지 못한 회비 ${fmtWon(gap)}원이 있습니다.` : ""}</div>
+        <div class="lead">덜 쓴 돈은 다음 달로 넘어갑니다.<br>예산은 회비를 모두 걷었을 때 기준입니다.${gap > 0 ? `<br>아직 걷지 못한 회비 ${fmtWon(gap)}원이 있습니다.` : ""}</div>
         ${shown.length ? `<div class="pr head"><span>월</span><span class="cols"><span>쓴 돈</span><span>남은 예산</span></span></div>${rows}` : ""}${futureLine}</div></section>`;
     } else $("#budget").innerHTML = "";
 

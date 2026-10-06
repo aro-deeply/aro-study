@@ -177,7 +177,7 @@
     const D = await loadAll();
     const nt = D.settings?.notice;
     if (!DEMO && nt?.text && (!nt.until || D.today <= nt.until)) $("#note").innerHTML = `<div class="notice"><b>공지</b>${esc(nt.text)}</div>`;
-    if (DEMO) $("#note").innerHTML = `<div class="notice"><b>화면 예시</b>이름과 금액은 가명입니다. 멤버B로 접속했다고 가정한 화면입니다.</div>`;
+    if (DEMO) $("#note").innerHTML = `<div class="notice"><b>화면 예시</b>이름과 금액은 가명입니다.<br>멤버B로 접속했다고 가정한 화면입니다.</div>`;
     renderHero(D); renderTasks(D); renderNext(D); renderRecords(D); renderFundPanel(D);
     window.__ready = true;
   } catch (ex) {

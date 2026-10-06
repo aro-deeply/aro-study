@@ -284,10 +284,10 @@ export function renderCost(root, { fundItems = [], r, payments = [], me = "", f 
     const all = r.byDate.flatMap(d => d.items);
     const one = all.length === 1 ? all[0] : null;
     const what = one ? `${esc(one.item || "추가 비용")}${one.paidBy ? `${NB}· ${esc(memberName(one.paidBy))} 결제` : ""}<br>` : "";
-    const tail = `100원 단위로 올려 나눴고${r.surplus ? `, 정산 후 남은 ${fmtWon(r.surplus)}원은 회비에 넣습니다.` : " 남는 돈은 없습니다."}`;
+    const tail = `100원 단위로 올려 나눴고${r.surplus ? `,<br>정산 후 남은 ${fmtWon(r.surplus)}원은 회비에 넣습니다.` : " 남는 돈은 없습니다."}`;
     const lead = r.uniform && r.n
-      ? `${what}참석 ${r.n}명이 1인 ${fmtWon(r.share)}원씩 나눠 냅니다. ${tail}`
-      : `${what}같은 항목을 함께 쓴 사람끼리 똑같이 나눕니다. ${tail}`;
+      ? `${what}참석 ${r.n}명이 1인 ${fmtWon(r.share)}원씩 나눠 냅니다.<br>${tail}`
+      : `${what}같은 항목을 함께 쓴 사람끼리 똑같이 나눕니다.<br>${tail}`;
     const items = one ? "" : all.map(x => `<div class="pr"><span class="grow">${esc(x.item || "(항목 없음)")}<span class="sub">${esc(fmtDate(x.date, "short"))}${x.paidBy ? `${NB}· ${esc(memberName(x.paidBy))} 결제` : ""}</span></span><span class="v num">${fmtWon(x.amount)}원</span></div>`).join("");
     const tos = [...new Set(r.transfers.map(t => t.to))];
     const singleTo = tos.length === 1 ? tos[0] : null;

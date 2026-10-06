@@ -179,7 +179,7 @@ a.rc:hover{box-shadow:0 2px 4px rgba(19,21,23,.05),0 8px 20px rgba(19,21,23,.08)
 .panel .top small{display:block;font-size:.8125rem;color:var(--muted)}
 .panel h3{font-size:.875rem;font-weight:600;color:var(--muted);padding:14px 16px 4px;margin:0;display:flex;justify-content:space-between;gap:8px}
 .panel h3 em{font-weight:500;color:var(--muted-soft)}
-.panel .lead{font-size:.8125rem;color:var(--muted);padding:0 16px 8px}
+.panel .lead{font-size:.8125rem;color:var(--muted);padding:0 16px 8px;line-height:1.6;text-wrap:pretty}
 .bar{height:6px;border-radius:99px;background:#EEEFF1;margin:12px 0 6px;overflow:hidden}
 .bar i{display:block;height:100%;background:var(--point);border-radius:99px}
 .bar.over i{background:var(--alert)}
@@ -344,6 +344,7 @@ section[data-tab].on{display:block}
 .notice{background:#fff;border:1px solid var(--point-line);border-radius:12px;padding:12px 16px;font-size:.9375rem;line-height:1.6;white-space:pre-line;margin:22px 0 0}
 .pending{font-size:.8125rem;color:var(--muted-soft);white-space:nowrap}
 .notice b{display:block;font-size:.8125rem;color:var(--point-d);margin-bottom:2px}
+.notice,.task p,.doc p,.cm .tx,.res .nt,.prep{text-wrap:pretty}
 
 /* ---------- 8. 로그인·이름 선택 게이트 ---------- */
 .gate{position:fixed;inset:0;z-index:100;background:var(--blush);display:flex;align-items:center;justify-content:center;padding:24px}

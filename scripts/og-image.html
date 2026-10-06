@@ -1,41 +1,45 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <!--
-  카톡 공유 썸네일(assets/og-image.png)의 디자인 원본. 1200x630.
-  수정 후 재렌더링: 이 파일을 브라우저로 열어 1200x630으로 캡처하거나,
-  Playwright로: page.set_viewport_size 1200x630, 폰트 로딩(document.fonts.status === 'loaded') 대기 후 screenshot.
-  결과를 assets/og-image.png로 저장하고 커밋. 카카오 캐시는 https://developers.kakao.com/tool/debugger/sharing 에서 초기화.
+  카톡 공유 썸네일(assets/og-image.png)의 디자인 원본. 1200x630. (2026-10-07 새 디자인: 블러시 바탕 + 코랄 포인트, 사이트와 같은 Pretendard)
+  날짜처럼 바뀌는 정보는 넣지 않는다(카카오가 이미지를 캐시하므로 금방 틀린 정보가 된다).
+  카톡 미리보기는 가장자리가 잘릴 수 있어 중요한 글자는 좌우 72px 안쪽에 둔다.
+  수정 후 재렌더링: Playwright로 viewport 1200x630, document.fonts.ready 대기 후 screenshot -> assets/og-image.png.
+  카카오 캐시는 https://developers.kakao.com/tool/debugger/sharing 에서 사이트 주소를 넣고 "캐시 초기화".
 -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;800;900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{width:1200px;height:630px;overflow:hidden}
-  body{
-    font-family:'Gothic A1','Apple SD Gothic Neo','Malgun Gothic',sans-serif;
-    background:#101214;color:#F5F6F4;
-    display:flex;flex-direction:column;justify-content:space-between;
-    padding:56px 72px;
-  }
-  .top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #2A2D31;padding-bottom:22px}
-  .top .l{font-size:18px;font-weight:800;letter-spacing:.26em}
-  .top .r{font-size:16px;font-weight:500;letter-spacing:.22em;color:#7A7F86}
-  h1{font-size:104px;font-weight:900;line-height:1.16;letter-spacing:-.03em}
-  h1 span{color:#D8F34E}
-  .bottom{display:flex;align-items:center;gap:20px}
-  .bar{width:88px;height:6px;background:#D8F34E}
-  .est{font-size:16px;font-weight:500;letter-spacing:.22em;color:#7A7F86}
+  body{font-family:Pretendard,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#F5E8E4;color:#131517;
+    display:grid;grid-template-columns:1fr 400px;align-items:center;gap:56px;padding:0 80px;-webkit-font-smoothing:antialiased}
+  .brand{display:flex;align-items:center;gap:10px;font-size:22px;font-weight:700;letter-spacing:.05em;margin-bottom:46px}
+  .brand i{width:12px;height:12px;border-radius:50%;background:#B65845;display:inline-block}
+  .l1{font-size:48px;font-weight:400;color:#B65845;letter-spacing:-.02em;line-height:1.2}
+  .l2{font-size:104px;font-weight:700;letter-spacing:-.04em;line-height:1.08;margin-top:4px}
+  .sub{font-size:26px;color:#6B5A55;margin-top:28px;line-height:1.5}
+  .card{background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 14px 40px rgba(120,50,35,.14)}
+  .card .m{background:#B65845;color:#fff;font-size:22px;font-weight:700;padding:16px 28px}
+  .card .in{padding:12px 28px 18px}
+  .row{display:flex;align-items:center;gap:16px;padding:16px 0;border-top:1px solid #EBECED;font-size:25px;font-weight:600}
+  .row:first-child{border-top:0}
+  .ic{width:44px;height:44px;border:1.5px solid #E3E4E6;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#62656A;flex:0 0 44px}
+  .ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .row small{display:block;font-size:19px;font-weight:400;color:#62656A;margin-top:1px}
 </style></head>
 <body>
-  <div class="top">
-    <div class="l">HR STUDY</div>
-    <div class="r">MONTHLY ARCHIVE</div>
+  <div>
+    <div class="brand"><i></i>HR STUDY</div>
+    <div class="l1">조직과 사람을 읽는</div>
+    <div class="l2">HR 스터디</div>
+    <div class="sub">매월 둘째 수요일 저녁, 함께 읽고 질문하고 나누는 모임</div>
   </div>
-  <h1>
-    <div>조직과 사람을</div>
-    <div>읽고<span>,</span> 질문하고<span>,</span> 나누다</div>
-  </h1>
-  <div class="bottom">
-    <div class="bar"></div>
-    <div class="est">EST. 2026</div>
+  <div class="card">
+    <div class="m">모임 안내</div>
+    <div class="in">
+      <div class="row"><span class="ic"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg></span><div>다음 모임<small>날짜, 장소, 발제</small></div></div>
+      <div class="row"><span class="ic"><svg viewBox="0 0 16 16"><path d="M8 4c-1.5-1.2-3.5-1.5-6-1.5v10c2.5 0 4.5.3 6 1.5 1.5-1.2 3.5-1.5 6-1.5v-10c-2.5 0-4.5.3-6 1.5zM8 4v10"/></svg></span><div>모임 기록<small>내용, 자료, 의견</small></div></div>
+      <div class="row"><span class="ic"><svg viewBox="0 0 16 16"><rect x="1.5" y="3.5" width="13" height="9" rx="2"/><circle cx="8" cy="8" r="2"/></svg></span><div>회비<small>남은 회비, 납부 현황</small></div></div>
+    </div>
   </div>
 </body></html>
