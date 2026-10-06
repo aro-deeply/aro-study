@@ -250,18 +250,37 @@ export function showNamePicker(list = activeMembers()) {
   });
 }
 
+/** 이니셜 동그라미에 넣을 글자. 한글 세 글자 이름은 성을 빼고 두 글자(예: 김효경 -> 효경), 영문·숫자로 끝나면 끝 글자. */
+export function initials(name, one = false) {
+  const s = String(name || "").trim();
+  if (!s) return "";
+  if (/[A-Za-z0-9]$/.test(s)) return s.slice(-1).toUpperCase();
+  const h = s.replace(/\s+/g, "");
+  if (one) return h.length >= 3 ? h.slice(1, 2) : h.slice(0, 1);
+  return h.length >= 3 ? h.slice(-2) : h.slice(0, 2);
+}
+/** 이니셜 동그라미 HTML. cls: "sm" | "lg" | "" . 작은 동그라미(sm)와 겹친 묶음(one)은 한 글자. */
+export function avatar(id, cls = "", one = false) {
+  const n = memberName(id);
+  return `<span class="av${cls ? " " + cls : ""}" title="${esc(n)}">${esc(initials(n, one || cls === "sm"))}</span>`;
+}
+
 /* ---------- 상단 바 ---------- */
-export function renderTopbar() {
+export function renderTopbar(meId = getMe(), opt = {}) {
   let bar = $("#topbar");
   if (!bar) { bar = el('<div id="topbar"></div>'); document.body.prepend(bar); }
-  const me = memberById(getMe());
+  const me = memberById(meId);
   bar.className = "topbar";
+  const home = opt.home || ROOT, fundHref = opt.fund || ROOT + "fund.html";
+  const onFund = /fund\.html$/.test(location.pathname);
   bar.innerHTML = `<div class="in">
-    <a class="brand" href="${ROOT}"><b class="solo">HR STUDY</b></a>
+    <div class="left"><a class="brand" href="${home}">HR STUDY</a>
+      <nav class="links"><a href="${home}"${onFund ? "" : ' class="on"'}>모임</a><a href="${fundHref}"${onFund ? ' class="on"' : ""}>회비</a></nav></div>
     <div class="who">
-      ${isAdmin(me) ? `<a class="link-btn" href="${ROOT}admin.html">관리</a>` : ""}
-      <button class="me" type="button" title="이름 바꾸기">${esc(me?.name || "이름 선택")}</button>
+      ${isAdmin(me) ? `<a class="admin" href="${ROOT}admin.html">관리</a>` : ""}
+      <button class="me${me ? "" : " empty"}" type="button" title="이름 바꾸기">${me ? avatar(me.id) : ""}${esc(me?.name || "이름 선택")}</button>
     </div></div>`;
+  if (opt.demo) { $(".me", bar).disabled = true; $(".me", bar).title = "예시 화면"; return bar; }
   $(".me", bar).addEventListener("click", async () => { await showNamePicker(); document.dispatchEvent(new CustomEvent("aro:me", { detail: getMe() })); });
   return bar;
 }

@@ -70,7 +70,7 @@ git commit -m "week: <날짜> <제목>"
 git push origin main
 ```
 
-1~2분 뒤 `https://aro-deeply.github.io/aro-study/weeks/<날짜>/`가 열리는지 확인하고, 목록(`https://aro-deeply.github.io/aro-study/`) 맨 위에 카드가 링크로 보이는지 확인한 뒤 URL을 보고한다. 정산과 의견은 페이지가 뜬 뒤 Firestore에서 채워지므로, 지출이 아직 없으면 "등록된 지출이 없습니다"가 정상이다.
+1~2분 뒤 `https://aro-deeply.github.io/aro-study/weeks/<날짜>/`가 열리는지 확인하고, 첫 화면(`https://aro-deeply.github.io/aro-study/`) "지난 모임" 맨 위에 그 모임 카드가 "기록 보기"와 함께 보이는지 확인한 뒤 URL을 보고한다. 비용과 의견은 페이지가 뜬 뒤 Firestore에서 채워지므로, 지출이 아직 없으면 비용 칸에 "이 모임에서 쓴 돈이 없습니다"가 정상이다.
 
 ## 보고 형식
 

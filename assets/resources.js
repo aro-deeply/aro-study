@@ -67,6 +67,7 @@ export function mountResources({ sessionId, me = "", store, root, countEl, uploa
     const dis = me ? "" : " disabled";
     root.innerHTML = `
       <div class="res-list">${list.map(one).join("") || '<div class="empty">아직 올라온 자료 없음</div>'}</div>
+      <details class="addres"><summary>+ 자료 올리기</summary>
       <form class="res-form" id="res-form">
         <div class="row stack">
           <div class="field"><label for="res-title">제목</label><input id="res-title" type="text" placeholder="자료 이름 또는 한 줄 요약" autocomplete="off"${dis}></div>
@@ -75,7 +76,7 @@ export function mountResources({ sessionId, me = "", store, root, countEl, uploa
         <div class="field"><label for="res-file">파일</label><input id="res-file" type="file" accept="${FILE_ACCEPT}"${dis}><div class="help">선택 · 20MB 이하 · PDF, 이미지, 오피스 문서, 한글, 압축</div></div>
         <div class="field"><textarea id="res-note" style="min-height:72px" placeholder="${me ? "선택 · 관련된 이유, 볼 만한 부분" : "상단에서 이름을 선택하면 올릴 수 있음"}"${dis}></textarea></div>
         <div class="actions"><button class="btn" type="submit" id="res-submit"${dis}>올리기</button></div>
-      </form>`;
+      </form></details>`;
     if (countEl) countEl.textContent = list.length ? `${list.length}건` : "";
   }
   root.addEventListener("submit", async e => {

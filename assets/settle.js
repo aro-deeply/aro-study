@@ -250,3 +250,92 @@ export async function mountSettlement(root, sessionId, opt = {}) {
     return null;
   }
 }
+
+/* ---------- 주차 페이지 비용 패널 (2026-10-07 재디자인) ----------
+   숫자는 computeSettlement / computeFund 결과를 그대로 옮긴다. 여기서 새로 계산하는 것은 합계와 보전 여부뿐이다. */
+const NB = " ";
+/**
+ * @param {HTMLElement} root
+ * @param {{ fundItems: object[], r: ReturnType<computeSettlement>, payments: object[], me?: string, f?: object|null }} p
+ */
+export function renderCost(root, { fundItems = [], r, payments = [], me = "", f = null }) {
+  const amt = v => Math.round(Number(v) || 0);
+  const adminId = f?.adminId || r.adminId || null;
+  const acct = f?.current?.account || "";
+  const parts = [];
+
+  if (fundItems.length) {
+    const total = fundItems.reduce((s, x) => s + amt(x.amount), 0);
+    const doneTo = {};
+    payments.filter(q => q.from === FUND_ID).forEach(q => { doneTo[q.to] = (doneTo[q.to] || 0) + amt(q.amount); });
+    const byPayer = {};
+    fundItems.forEach(x => { if (x.paidBy && adminId && x.paidBy !== adminId) byPayer[x.paidBy] = (byPayer[x.paidBy] || 0) + amt(x.amount); });
+    const reimb = id => (byPayer[id] || 0) - (doneTo[id] || 0) > 0 ? `회비에서 ${fmtWon(byPayer[id] - (doneTo[id] || 0))}원 돌려받을 예정` : "회비에서 돌려받음";
+    const cat = x => x.category && !String(x.item || "").includes(x.category) ? x.category : "";
+    parts.push(`<h3>회비에서 쓴 돈<em class="num">${fmtWon(total)}원</em></h3>
+      <div class="lead">아래 항목은 회비로 냈습니다.</div>
+      ${fundItems.map(x => { const extra = [cat(x), x.paidBy && adminId && x.paidBy !== adminId ? `${esc(memberName(x.paidBy))} 먼저 결제${NB}· ${reimb(x.paidBy)}` : ""].filter(Boolean).join(NB + "· ");
+        return `<div class="pr"><span class="grow">${esc(x.item || "(항목 없음)")}${extra ? `<span class="sub">${extra}</span>` : ""}</span><span class="v num">${fmtWon(x.amount)}원</span></div>`; }).join("")}`);
+  }
+
+  if (r.count) {
+    const sent = {};
+    payments.filter(q => q.from !== FUND_ID && q.to !== FUND_ID).forEach(q => (sent[q.from] ||= []).push(q.date || ""));
+    const all = r.byDate.flatMap(d => d.items);
+    const one = all.length === 1 ? all[0] : null;
+    const what = one ? `${esc(one.item || "추가 비용")}${one.paidBy ? `${NB}· ${esc(memberName(one.paidBy))} 결제` : ""}<br>` : "";
+    const tail = `100원 단위로 올려 나눴고${r.surplus ? `, 정산 후 남은 ${fmtWon(r.surplus)}원은 회비에 넣습니다.` : " 남는 돈은 없습니다."}`;
+    const lead = r.uniform && r.n
+      ? `${what}참석 ${r.n}명이 1인 ${fmtWon(r.share)}원씩 나눠 냅니다. ${tail}`
+      : `${what}같은 항목을 함께 쓴 사람끼리 똑같이 나눕니다. ${tail}`;
+    const items = one ? "" : all.map(x => `<div class="pr"><span class="grow">${esc(x.item || "(항목 없음)")}<span class="sub">${esc(fmtDate(x.date, "short"))}${x.paidBy ? `${NB}· ${esc(memberName(x.paidBy))} 결제` : ""}</span></span><span class="v num">${fmtWon(x.amount)}원</span></div>`).join("");
+    const tos = [...new Set(r.transfers.map(t => t.to))];
+    const singleTo = tos.length === 1 ? tos[0] : null;
+    const state = p => {
+      if (p.remaining < 0) {
+        const tr = r.transfers.find(t => t.from === p.id);
+        return `<span class="minus num">보낼 돈 ${fmtWon(-p.remaining)}원</span>${tr && !singleTo ? `<span class="sub" style="text-align:right">${esc(memberName(tr.to))}에게</span>` : ""}`;
+      }
+      if (p.remaining > 0) { const k = r.transfers.filter(t => t.to === p.id).length; return `<span class="v num">받을 돈 ${fmtWon(p.remaining)}원</span>${k ? `<span class="sub" style="text-align:right">${k}명에게서</span>` : ""}`; }
+      const last = (sent[p.id] || []).sort().pop();
+      return `<span class="ok">완료</span>${last ? `<span class="sub" style="text-align:right">${esc(fmtDate(last, "short"))}</span>` : ""}`;
+    };
+    const people = r.people.map(p => `<div class="pr${p.id === me ? " me" : ""}"><span class="nm">${esc(p.name)}${p.id === me ? " (나)" : ""}${p.isAdmin ? ' <span class="tag">총무</span>' : ""}${p.paid ? `<span class="sub">낸 돈 ${fmtWon(p.paid)}원</span>` : ""}</span><span style="text-align:right">${state(p)}</span></div>`).join("");
+    const myTr = me ? r.transfers.find(t => t.from === me) : null;
+    const copy = myTr && myTr.to === adminId && acct
+      ? `<div class="pad" style="padding-top:12px"><button type="button" class="btn block" data-copy="${esc(acct.match(/[\d-]{8,}/)?.[0] || acct)}">계좌번호 복사</button><div class="sub" style="font-size:.75rem;margin-top:6px;text-align:center">${esc(acct)}</div></div>` : "";
+    const bad = !r.checks.itemsOk || !r.checks.owedOk || r.checks.dupes.length || r.warnings.length;
+    const warn = bad ? `<div class="warnline">${[
+        !r.checks.itemsOk ? `항목 합 ${fmtWon(r.checks.subSum)}원이 총액 ${fmtWon(r.total)}원과 다름` : "",
+        !r.checks.owedOk ? `부담액 합 ${fmtWon(r.checks.owedSum)}원이 총액과 다름` : "",
+        r.checks.dupes.length ? `중복 의심: ${r.checks.dupes.map(esc).join(", ")}` : "",
+        ...r.warnings.map(esc)].filter(Boolean).join(NB + "· ")}</div>` : "";
+    parts.push(`<h3${fundItems.length ? ' style="border-top:1px solid var(--line);margin-top:6px"' : ""}>추가 비용<em class="num">${fmtWon(r.total)}원</em></h3>
+      <div class="lead">${lead}</div>${items}
+      <h3>사람별 정산</h3>${singleTo && r.transfers.length ? `<div class="lead">보낼 돈은 모두 ${esc(memberName(singleTo))}에게 보냅니다.</div>` : ""}${people}${copy}${warn}`);
+  }
+
+  root.innerHTML = parts.length
+    ? `<div class="panel">${parts.join("")}</div>`
+    : `<div class="panel"><h3>비용</h3><div class="lead" style="padding-bottom:16px">이 모임에서 쓴 돈이 없습니다.</div></div>`;
+}
+
+/** 주차 페이지: 세션 하나의 비용을 읽어 renderCost로 그린다. 세션 문서와 계산 결과를 돌려준다. */
+export async function mountCost(root, sessionId, opt = {}) {
+  root.innerHTML = '<div class="panel"><div class="lead" style="padding:16px">비용 불러오는 중</div></div>';
+  try {
+    await loadMembers();
+    const { session, expenses, payments } = await fetchSessionData(sessionId);
+    const fundItems = expenses.filter(x => !isSplit(x));
+    let f = null;
+    try { const fd = await fetchFundData(); f = computeFund({ terms: fd.terms, dues: fd.dues, expenses: fd.fundExpenses, payments: fd.fundPayments, members: members(), splitSurplus: fd.splitSurplus }); }
+    catch (ex) { console.error(ex); }
+    const r = computeSettlement({ expenses, payments, sessionsById: { [sessionId]: session || {} }, members: members() });
+    renderCost(root, { fundItems, r, payments, me: opt.me || "", f });
+    return { session, expenses, payments, result: r, fund: f };
+  } catch (ex) {
+    console.error(ex);
+    root.innerHTML = `<div class="note warn">비용 불러오기 실패: ${esc(ex.message || ex)}</div>`;
+    return null;
+  }
+}

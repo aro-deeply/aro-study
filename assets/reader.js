@@ -201,8 +201,8 @@ export function mountReader({ sessionId, me = "", store, root, title } = {}) {
     <span class="rd-title">메모 <em id="rd-count"></em></span>
     <span class="seg" id="rd-scope"><button type="button" data-v="mine" class="on">내 것만</button><button type="button" data-v="all">전체</button></span>
     <button type="button" id="rd-toggle">메모 펼치기</button>
-    <button type="button" id="rd-export">AI용 복사</button>
-    <button type="button" id="rd-reset" class="rd-quiet">내 것 지우기</button>
+    <button type="button" id="rd-export" title="AI 등에 붙여 넣을 수 있게 메모를 복사">메모 복사</button>
+    <button type="button" id="rd-reset" class="rd-quiet">내 메모 지우기</button>
     <span class="rd-hint">본문을 드래그하면 하이라이트·메모 버튼이 뜹니다. 내 표시를 누르면 수정·삭제.</span></div>`);
   document.body.appendChild(bar);
   $("#rd-scope", bar).addEventListener("click", e => {
@@ -255,7 +255,7 @@ export function mountComments({ sessionId, me = "", store, root, countEl } = {})
     root.innerHTML = `
       <div class="cm-list">${list || '<div class="empty">아직 의견 없음</div>'}</div>
       <form class="cm-form" id="cm-form">
-        <div class="field"><textarea id="cm-text" placeholder="${me ? "의견" : "상단에서 이름을 선택하면 남길 수 있음"}"${me ? "" : " disabled"}></textarea></div>
+        <div class="field"><textarea id="cm-text" placeholder="${me ? "의견을 남겨 주세요" : "상단에서 이름을 선택하면 남길 수 있음"}"${me ? "" : " disabled"}></textarea></div>
         <div class="actions"><button class="btn" type="submit"${me ? "" : " disabled"}>남기기</button></div>
       </form>`;
     const n = live.filter(c => !c.deleted).length;

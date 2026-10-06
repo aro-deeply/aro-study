@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#FAFAF7">
+<meta name="theme-color" content="#F5E8E4">
 <link rel="manifest" href="/aro-study/manifest.json">
 <link rel="apple-touch-icon" href="/aro-study/assets/icons/apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="/aro-study/assets/icons/icon-192.png">
 <title>HR STUDY</title>
+<meta name="description" content="조직과 사람을 읽고, 질문하고, 나누는 HR 스터디. 다음 모임, 지난 모임 기록, 회비 현황.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="HR STUDY">
 <meta property="og:description" content="조직과 사람을 읽고, 질문하고, 나누다. 주차별 기록, 회비 현황, 의견을 한곳에서.">
@@ -17,278 +18,170 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/style.css">
 <style>
-  .week.nopage{cursor:default}
-  .week.nopage:hover{border-color:var(--line);transform:none}
-  .settle-block{margin-bottom:28px}
-  .settle-block h3{margin:0 0 10px;font-size:1rem}
-  .month-pick{margin:0 0 18px}
-  .month-pick .chip{cursor:pointer}
-  .month-pick .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-  .mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:0 0 6px}
-  .mini .stat b{font-size:1.125rem}
-  @media (max-width:560px){.mini{grid-template-columns:1fr 1fr}.mini .stat:last-child{grid-column:auto}}
-  h2.tabh{margin-top:26px}
-  /* 데이터가 오기 전에는 빈 카드·탭 대신 안내 한 줄만 보인다 */
-  body.loading #stats,body.loading #tabs,body.loading section[data-tab]{display:none}
-  #loading{display:none;padding:56px 0 40px;text-align:center;color:var(--muted-soft);font-size:.875rem;line-height:1.8}
+  /* 데이터가 오기 전에는 본문 대신 안내 한 줄 */
+  body.loading .body,body.loading #tile{visibility:hidden}
+  #loading{display:none;padding:40px 0 10px;text-align:center;color:var(--muted-soft);font-size:.875rem;line-height:1.8}
   body.loading #loading{display:block}
   #loading .slow{display:none;font-size:.8125rem}
   #loading.slow .slow{display:block}
+  .rec-more{display:none}
+  .mob-only{display:none!important}
+  @media (max-width:760px){.mob-only{display:flex!important}}
+  .tl.all .rec-more{display:block}
 </style>
 </head><body class="loading">
-<div id="topbar"></div>
-<div class="wrap">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-pin" viewBox="0 0 16 16"><path d="M8 14s5-4.2 5-8A5 5 0 0 0 3 6c0 3.8 5 8 5 8z"/><circle cx="8" cy="6" r="1.8"/></symbol>
+  <symbol id="i-won" viewBox="0 0 16 16"><path d="M2 4l2.5 8L8 5l3.5 7L14 4M1.5 7.5h13"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M3 8h10M9 4l4 4-4 4"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 16 16"><rect x="5.5" y="1.8" width="5" height="8" rx="2.5"/><path d="M3.5 8a4.5 4.5 0 0 0 9 0M8 12.5V14.5"/></symbol>
+  <symbol id="i-book" viewBox="0 0 16 16"><path d="M8 4c-1.5-1.2-3.5-1.5-6-1.5v10c2.5 0 4.5.3 6 1.5 1.5-1.2 3.5-1.5 6-1.5v-10c-2.5 0-4.5.3-6 1.5zM8 4v10"/></symbol>
+</defs></svg>
+
+<header class="hero"><div class="w">
+  <div id="topbar"></div>
+  <div class="hgrid">
+    <div>
+      <div class="l1">조직과 사람을 읽는</div>
+      <div class="l2">HR 스터디</div>
+      <div class="hsub" id="hsub">&nbsp;</div>
+    </div>
+    <div class="event" id="tile"></div>
+  </div>
+</div></header>
+
+<div class="w">
+  <div id="loading">불러오는 중<span class="slow">연결이 느립니다 · 잠시 기다리거나 새로고침</span></div>
   <div id="note"></div>
-  <div id="loading">불러오는 중<span class="slow">연결이 느립니다 · 잠시 기다리거나 새로고침</span></div>
-
-  <div class="stats one" id="stats">
-    <div class="stat"><b class="soft">…</b><span>다음 모임</span></div>
+  <div class="body">
+    <main class="col">
+      <section class="sec" data-m style="--o:2" id="next-sec">
+        <h2>앞으로의 발제</h2>
+        <div id="next"></div>
+      </section>
+      <section class="sec" data-m style="--o:3">
+        <h2>지난 모임 <small id="rec-count"></small></h2>
+        <div id="records"></div>
+      </section>
+    </main>
+    <aside class="col side">
+      <div id="tasks" data-m style="--o:1"></div>
+      <section class="sec" data-m style="--o:4">
+        <h2 class="mob-only">회비</h2>
+        <div id="fund"></div>
+      </section>
+    </aside>
   </div>
-
-  <div class="tabs" id="tabs">
-    <button data-t="summary" class="on" type="button">요약</button>
-    <button data-t="months" type="button">월별</button>
-    <button data-t="fund" type="button">회비</button>
-    <button data-t="schedule" type="button">일정·발제</button>
-  </div>
-
-  <!-- 요약 -->
-  <section data-tab="summary" class="on">
-    <div id="sum-notes"></div>
-    <h2 class="tabh">최근 모임 <span class="cnt" id="sum-count"></span></h2>
-    <div id="sum-weeks"><div class="empty">불러오는 중</div></div>
-  </section>
-
-  <!-- 월별 -->
-  <section data-tab="months">
-    <div class="chips month-pick" id="month-pick"></div>
-    <div id="month-view"></div>
-  </section>
-
-  <!-- 회비 -->
-  <section data-tab="fund">
-    <h2 class="tabh">회비 현황</h2>
-    <p class="secsub">월별 예산 안에서 사용. 잔액은 다음 달로 이월.</p>
-    <div id="fund"><div class="empty">불러오는 중</div></div>
-  </section>
-
-  <!-- 일정·발제 -->
-  <section data-tab="schedule">
-    <div id="sched"><div class="empty">불러오는 중</div></div>
-  </section>
-
-  <p class="foot">HR STUDY</p>
+  <div class="foot"><span>HR STUDY</span><span>조직과 사람을 읽고, 질문하고, 나누다</span></div>
 </div>
 
+
 <script type="module">
-  import { ready, db, esc, $, $$, fmtWon, fmtDiff, fmtDate, todayStr, members, setMembers, memberName, memberById, isAdmin, honor,
-           collection, getDocs, query, orderBy } from "./assets/app.js";
-  import { computeSettlement, renderSettlement } from "./assets/settle.js";
-  import { computeFund, renderFund, isSplit, isFund } from "./assets/fund.js";
-  import { computeSchedule, renderSchedule, loadSettings, ruleLabel, fmtMonth, ym, addMonths, monthIndex } from "./assets/schedule.js";
+  import { esc, $, fmtWon, memberName, honor, avatar, activeMembers, isAdmin, toast } from "./assets/app.js";
+  import { termPeriod, bindCopy } from "./assets/fund.js";
+  import { ruleLabel, fmtMonth } from "./assets/schedule.js";
+  import { DEMO, loadAll, dparts, ordinal, href, tasksFor, loadError } from "./assets/site.js";
 
-  // ?demo=1 이면 로그인 없이 가명 예시 데이터로 화면만 보여 준다.
-  const DEMO = new URLSearchParams(location.search).get("demo") === "1";
-  let me = "", today = todayStr();
-  const statsEl = $("#stats");
-  let sessions = [], expenses = [], payments = [], comments = [], terms = [], dues = [], settings = null;
-  let f, r, sch, sessionsById = {}, commentCount = {};
-
-  /* ---------- 탭 ---------- */
-  function showTab(name, sub) {
-    if (!$(`#tabs button[data-t="${name}"]`)) name = "summary";
-    $$("#tabs button").forEach(b => b.classList.toggle("on", b.dataset.t === name));
-    $$("section[data-tab]").forEach(s => s.classList.toggle("on", s.dataset.tab === name));
-    if (name === "months") pickMonth(sub || curMonth || ym(today), false);
-    const hash = name === "summary" ? "" : "#" + name + (name === "months" && curMonth ? "/" + curMonth : "");
-    if (location.hash !== hash) history.replaceState(null, "", location.pathname + location.search + hash);
-  }
-  $("#tabs").addEventListener("click", e => { const b = e.target.closest("button"); if (b) showTab(b.dataset.t); });
-  document.addEventListener("click", e => { const a = e.target.closest("a[data-tab]"); if (a) { e.preventDefault(); showTab(a.dataset.tab, a.dataset.month); } });
-
-  /* ---------- 공용 조각 ---------- */
-  const won = '<small style="font-size:.875rem;font-weight:500">원</small>';
-  function weekCard(s) {
-    const no = String(sessions.length - sessions.indexOf(s)).padStart(2, "0");
-    const upcoming = (s.date || "") >= today && !s.page;   // 아직 열리지 않은 모임(예정)
-    const facts = upcoming ? [] : [`참석 <b>${(s.attendees || []).length}명</b>`];
-    if (s.presenter) facts.push(`발제 <b>${esc(honor(memberName(s.presenter)))}</b>`);
-    if (upcoming) { const when = [s.time, s.place].filter(Boolean).join(" · "); if (when) facts.push(esc(when)); }
-    const spent = expenses.filter(x => x.sessionId === s.id).reduce((a, x) => a + (Number(x.amount) || 0), 0);
-    if (spent) facts.push(`지출 <b>${fmtWon(spent)}원</b>`);
-    if (!upcoming) facts.push(`의견 <b>${commentCount[s.id] || 0}개</b>`);
-    const tag = s.page ? "" : (upcoming ? ' <span class="tag">예정</span>' : ' <span class="tag">기록 작성 전</span>');
-    const inner = `<div class="meta"><b>WEEK ${no}</b><span>${fmtDate(s.date)}</span></div>
-      <h3>${esc(s.title || (upcoming ? "주제 미정" : "(제목 없음)"))}${tag}</h3>
-      <div class="facts">${facts.map(x => `<span>${x}</span>`).join("")}</div>`;
-    const href = DEMO ? "demo/" : `weeks/${esc(s.id)}/`;
-    return s.page ? `<a class="week" href="${href}">${inner}</a>` : `<div class="week nopage">${inner}</div>`;
-  }
-  function settleBlocks(list) {
-    // 회차별 추가 비용 정산서(참석자 n분의 1). 해당 회차가 없으면 빈 문자열.
-    const wrap = document.createElement("div");
-    for (const s of list.filter(s => expenses.some(x => x.sessionId === s.id && isSplit(x)))) {
-      const blk = document.createElement("div"); blk.className = "settle-block";
-      blk.innerHTML = `<h3>${fmtDate(s.date)}${s.page ? ` <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}" style="font-weight:500;font-size:.8125rem">기록</a>` : ""}</h3><div class="body"></div>`;
-      const rs = computeSettlement({ expenses: expenses.filter(x => x.sessionId === s.id), payments: payments.filter(p => p.sessionId === s.id), sessionsById, members: members() });
-      renderSettlement(blk.querySelector(".body"), rs, { payments: payments.filter(p => p.sessionId === s.id), subtitle: "", totalLabel: "추가 비용" });
-      wrap.appendChild(blk);
-    }
-    return wrap.innerHTML;
-  }
-
-  /* ---------- 월별 ---------- */
-  let curMonth = "";
-  let monthList = [];
-  function buildMonthList() {
-    const b = f.current?.budget;
-    const cands = [ym(today), ...sessions.map(s => ym(s.date)), b?.startYm, b?.endYm].filter(Boolean);
-    const lo = cands.reduce((a, x) => x < a ? x : a), hi0 = cands.reduce((a, x) => x > a ? x : a);
-    const hi = hi0 > addMonths(ym(today), 2) ? hi0 : addMonths(ym(today), 2);
-    monthList = [];
-    for (let i = monthIndex(lo); i <= monthIndex(hi); i++) monthList.push(addMonths(lo, i - monthIndex(lo)));
-  }
-  function pickMonth(m, updateHash = true) {
-    if (!monthList.includes(m)) m = monthList.includes(ym(today)) ? ym(today) : monthList[monthList.length - 1];
-    curMonth = m;
-    $("#month-pick").innerHTML = monthList.map(x => `<span class="chip${x === m ? " on" : ""}" data-m="${x}">${esc(fmtMonth(x, x.slice(0, 4) === m.slice(0, 4) ? "short" : "full"))}${x === ym(today) ? " (이달)" : ""}</span>`).join("");
-    renderMonth(m);
-    if (updateHash) history.replaceState(null, "", location.pathname + location.search + "#months/" + m);
-  }
-  $("#month-pick").addEventListener("click", e => { const c = e.target.closest(".chip"); if (c) pickMonth(c.dataset.m); });
-
-  function renderMonth(m) {
-    const root = $("#month-view");
-    const inMonth = s => ym(s.date) === m;
-    const ss = sessions.filter(inMonth).slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-    const row = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 1, from: m }).rows[0];
-    const s = ss[ss.length - 1] || null;
-    const status = row.status === "next" ? '<span class="tag">다음</span>' : row.status === "done" ? '<span class="tag ok">완료</span>' : row.status === "passed" ? '<span class="tag warn">기록 없음</span>' : '<span class="tag">예정</span>';
-    const mt = s?.time || sch.meeting.time, mp = s?.place || sch.meeting.place;
-    const under = s ? (mp ? esc(mp) : "") : esc(ruleLabel(sch.meeting, false)) + (mp ? " · " + esc(mp) : "");
-    const head = `
-      <div class="st-head">
-        <div class="st-total"><div class="lab">${esc(fmtMonth(m))} 모임</div><b>${fmtDate(row.date, "short")}${mt ? ` <small>${esc(mt)}</small>` : ""}</b>
-          ${under ? `<span>${under}</span>` : ""}</div>
-        <div class="st-rule"><div class="lab">발제 ${status}</div>
-          <div class="eq">${row.presenter ? esc(honor(memberName(row.presenter))) : "미정"}</div>
-          ${s ? `${esc(s.title || "제목 미정")}${s.page ? ` · <a href="${DEMO ? "demo/" : `weeks/${esc(s.id)}/`}">기록 보기</a>` : ""}<br>참석 ${(s.attendees || []).length}명 · 의견 ${commentCount[s.id] || 0}개` : "등록된 모임 없음"}</div>
-      </div>`;
-
-    // 회비: 이달 배정·이월·지출·남은 금액
-    const b = f.current?.budget, br = b?.rows.find(x => x.ym === m);
-    const fundBox = br
-      ? `<div class="lab" style="margin-top:18px">${esc(f.current.name || "회비")}</div>
-         <div class="stats mini"><div class="stat"><b>${fmtWon(br.alloc)}${won}</b><span>배정</span></div><div class="stat"><b>${fmtWon(br.carried)}${won}</b><span>이월</span></div><div class="stat"><b>${fmtWon(br.spent)}${won}</b><span>회비 지출</span></div><div class="stat"><b${br.remaining < 0 ? ' style="color:var(--danger)"' : ""}>${fmtWon(br.remaining)}${won}</b><span>남은 금액</span></div></div>`
-      : `<div class="lab" style="margin-top:18px">회비</div><div class="secsub">${b ? `회비 사용 기간 아님 (${esc(fmtMonth(b.startYm))} ~ ${esc(fmtMonth(b.endYm))})` : "회비 설정 없음."}</div>`;
-    const mDues = dues.filter(d => ym(d.date) === m).sort((a, b2) => (a.date || "").localeCompare(b2.date || ""));
-    const duesLine = mDues.length ? `<div class="secsub">이달 납부 ${mDues.length}건 · ${fmtWon(mDues.reduce((a, d) => a + (Number(d.amount) || 0), 0))}원: ${mDues.map(d => esc(memberName(d.memberId))).join(", ")}</div>` : "";
-
-    // 지출 내역 (회비 지출 + 추가 비용)
-    const mx = expenses.filter(x => ym(x.date) === m).sort((a, b2) => (a.date || "").localeCompare(b2.date || ""));
-    const tot = mx.reduce((a, x) => a + (Number(x.amount) || 0), 0);
-    const items = mx.length ? `<div class="lab" style="margin-top:18px">지출 내역</div>
-      <div class="st-day"><div class="hd"><b>${esc(fmtMonth(m, "short"))}</b><span class="n">${mx.length}건</span><span class="sum">${fmtWon(tot)}원</span></div>
-      ${mx.map(x => `<div class="it"><span class="nm">${esc(x.item)}<small>${fmtDate(x.date, "short")} · ${esc(x.category || "")}${isFund(x) ? "" : " · n분의 1"}</small></span><span class="by">${esc(memberName(x.paidBy))}</span><span class="amt">${fmtWon(x.amount)}</span></div>`).join("")}</div>`
-      : `<div class="lab" style="margin-top:18px">지출 내역</div><div class="empty">지출 없음</div>`;
-
-    // 추가 비용 정산서
-    const blocks = settleBlocks(ss);
-    root.innerHTML = head + fundBox + duesLine + items + (blocks ? `<div class="lab" style="margin-top:18px">추가 비용 정산 (참석자 n분의 1)</div>${blocks}` : "");
-  }
-
-  /* ---------- 요약 ---------- */
-  function renderSummary() {
-    const cur = f.current, unpaid = cur ? cur.unpaid : [];
-    const nx = sch.next;
-    const t = nx?.session?.time || sch.meeting.time;
-    const place = nx?.session?.place || sch.meeting.place;
-    const name = nx?.presenter ? honor(memberName(nx.presenter)) : "";
-    const parts = nx?.session
-      ? [name && `발제 ${name}`, place].filter(Boolean)
-      : [ruleLabel(sch.meeting, false), name && `발제 ${name}`].filter(Boolean);
-    statsEl.innerHTML = `
-      <div class="stat"><b>${nx ? fmtDate(nx.date, "short") + (t ? " " + esc(t) : "") : "미정"}</b>
-        <span class="clip">다음 모임${parts.length ? " · " + parts.map(esc).join(" · ") : ""}</span></div>`;
-
-    // 확인할 것: 미납, 보전할 돈, 남은 정산. 제목 / 세부 / 링크를 나눠 한 줄씩.
-    const item = (title, detail, link, warn) => `<div class="rowi${warn ? " unpaid" : ""}"><div class="main">${title}<small>${detail}</small></div><span class="ops">${link}</span></div>`;
-    const notes = [];
-    if (cur && unpaid.length) notes.push(item(`미납 ${unpaid.length}명`, unpaid.map(p => esc(p.name)).join(", "), '<a href="#" data-tab="fund">회비 탭</a>', true));
-    if (f.reimburseTotal) notes.push(item(`회비에서 보전할 돈 ${fmtWon(f.reimburseTotal)}원`, f.reimburse.filter(x => x.remaining > 0).map(x => `${esc(x.name)} ${fmtWon(x.remaining)}원`).join(", "), '<a href="#" data-tab="fund">회비 탭</a>'));
-    const openSplit = sessions.filter(s => expenses.some(x => x.sessionId === s.id && isSplit(x)))
-      .map(s => ({ s, rs: computeSettlement({ expenses: expenses.filter(x => x.sessionId === s.id), payments: payments.filter(p => p.sessionId === s.id), sessionsById, members: members() }) }))
-      .filter(x => x.rs.transfers.length);
-    for (const { s, rs } of openSplit) {
-      const mine = rs.transfers.find(t => t.from === me);
-      const left = rs.transfers.reduce((a, t) => a + t.amount, 0);
-      notes.push(item(`정산 남음 ${rs.transfers.length}명 · ${fmtWon(left)}원`,
-        `${fmtDate(s.date, "short")}${mine ? ` · 내 몫 ${fmtWon(mine.amount)}원 → ${esc(memberName(mine.to))}` : ""}`,
-        `<a href="#" data-tab="months" data-month="${ym(s.date)}">월별 탭</a>`));
-    }
-    $("#sum-notes").innerHTML = notes.length
-      ? `<div class="lab" style="margin-top:16px">확인할 것</div><div class="rows">${notes.join("")}</div>`
-      : (cur ? '<div class="note ok" style="margin-top:16px">미납과 남은 정산 없음</div>' : "");
-
-    // 최근 모임 3개
-    const held = sessions.filter(s => (s.date || "") < today || s.page).length;   // 예정 카드는 횟수에 넣지 않는다
-    $("#sum-count").textContent = held ? `${held}회` : "";
-    $("#sum-weeks").innerHTML = sessions.length
-      ? sessions.slice(0, 3).map(weekCard).join("") + (sessions.length > 3 ? `<div class="secsub" style="margin-top:6px">지난 모임은 <a href="#" data-tab="months">월별 탭</a>에서.</div>` : "")
-      : `<div class="empty">기록된 모임 없음${isAdmin() ? ' · <a href="admin.html#sessions">관리</a>에서 세션 만들기' : ""}</div>`;
-  }
-
-  /* ---------- 시작 ---------- */
   const slowTimer = setTimeout(() => $("#loading").classList.add("slow"), 8000);
-  try {
-    if (DEMO) {
-      // 예시 화면을 홈 화면에 추가하면 실제 사이트가 아니라 예시가 열리도록 별도 manifest를 쓴다.
-      const mf = document.querySelector('link[rel="manifest"]'); if (mf) mf.href = "demo/manifest.json";
-      const S = await import("./demo/sample.js");
-      setMembers(S.MEMBERS); me = "a"; today = S.TODAY || today;
-      sessions = S.SESSIONS; expenses = S.EXPENSES; payments = S.PAYMENTS; comments = S.COMMENTS; terms = S.TERMS; dues = S.DUES; settings = S.SETTINGS;
-      $("#note").innerHTML = '<div class="note">화면 예시 · 이름과 금액은 가명</div>';
-    } else {
-      ({ me } = await ready());
-      const [sSnap, eSnap, pSnap, cSnap, tSnap, dSnap, st] = await Promise.all([
-        getDocs(query(collection(db, "sessions"), orderBy("date", "desc"))),
-        getDocs(collection(db, "expenses")),
-        getDocs(collection(db, "payments")),
-        getDocs(collection(db, "comments")),
-        getDocs(collection(db, "terms")),
-        getDocs(collection(db, "dues")),
-        loadSettings()
-      ]);
-      const rows = s => s.docs.map(d => ({ id: d.id, ...d.data() }));
-      sessions = rows(sSnap); expenses = rows(eSnap); payments = rows(pSnap); terms = rows(tSnap); dues = rows(dSnap); settings = st;
-      comments = cSnap.docs.map(d => d.data());
+  const NB = " ";   // 구분점 앞 공백(점이 줄 머리에 오지 않게)
+
+  function renderHero(D) {
+    const { sch } = D;
+    const m = sch.meeting;
+    const n = activeMembers().length;
+    $("#hsub").textContent = [ruleLabel(m), n ? `멤버 ${n}명` : ""].filter(Boolean).join(NB + "· ");
+    const nx = sch.next, tile = $("#tile");
+    if (!nx) { tile.className = "event none"; tile.innerHTML = `<div class="m">다음 모임</div><div class="in"><div class="d">일정 미정</div><div class="t">정해지면 여기에 나옵니다</div></div>`; return; }
+    const p = dparts(nx.date), s = nx.session, t = s?.time || m.time, place = s?.place || m.place;
+    const rows = [];
+    if (s?.title) rows.push(`<div class="row1"><svg class="i"><use href="#i-book"/></svg><span>${esc(s.title)}</span></div>`);
+    if (place) rows.push(`<div class="row1"><svg class="i"><use href="#i-pin"/></svg><span>${esc(place)}</span></div>`);
+    rows.push(nx.presenter
+      ? `<div class="row1">${avatar(nx.presenter, "sm")}<span>발제 ${esc(honor(memberName(nx.presenter)))}</span></div>`
+      : `<div class="row1"><svg class="i"><use href="#i-mic"/></svg><span>발제 미정</span></div>`);
+    tile.innerHTML = `<div class="m">${nx.date === D.today ? "오늘 모임" : "다음 모임"}</div>
+      <div class="in"><div class="d num">${p.m}월 ${p.d}일</div><div class="t">${p.w}요일${t ? ` <b>${esc(t)}</b>` : ""}</div>
+      <div class="rows">${rows.join("")}</div></div>`;
+  }
+
+  /** 다음 모임 이후의 발제 순서(날짜 배지 + 발제자). 없으면 섹션을 숨긴다. */
+  function renderNext(D) {
+    const { sch } = D, nx = sch.next;
+    const later = nx ? sch.rows.filter(r => r.date > nx.date).slice(0, 3) : [];
+    if (!later.length) { $("#next-sec").remove(); return; }
+    $("#next").innerHTML = `<div class="queue">${later.map(r => { const p = dparts(r.date); return `
+      <div class="q-item"><span class="tile date sm"><span>${p.m}월</span><b class="num">${p.d}</b></span>
+        <div class="tx"><b>${r.presenter ? `발제 ${esc(honor(memberName(r.presenter)))}` : "발제 미정"}</b><span>${p.w}요일${(r.session?.time || sch.meeting.time) ? " " + esc(r.session?.time || sch.meeting.time) : ""}</span></div></div>`; }).join("")}</div>`;
+  }
+
+  function recordCard(D, s, no) {
+    const p = dparts(s.date);
+    const att = s.attendees || [];
+    const shown = att.slice(0, 6).map(id => avatar(id, "", true)).join("");
+    const cc = D.commentCount[s.id] || 0;
+    const facts = [att.length ? `참석 ${att.length}명` : "", cc ? `의견 ${cc}개` : ""].filter(Boolean).join(NB + "· ");
+    const inner = `<h3>${esc(s.title || "(제목 없음)")}</h3>
+      ${s.presenter ? `<div class="by">${avatar(s.presenter, "sm")}발제 ${esc(honor(memberName(s.presenter)))}</div>` : ""}
+      <div class="ft"><span class="stack">${shown}${att.length > 6 ? `<span class="av">+${att.length - 6}</span>` : ""}${facts ? `<em>${facts}</em>` : ""}</span>
+        ${s.page ? '<span class="golink">기록 보기 &rarr;</span>' : '<span class="pending">기록 작성 전</span>'}</div>`;
+    return `<div class="dh">${p ? `${p.m}월 ${p.d}일<small>${p.w}요일</small>` : esc(s.date || "")}</div>
+      ${s.page ? `<a class="rc" href="${href.week(s)}">${inner}</a>` : `<div class="rc">${inner}</div>`}`;
+  }
+
+  function renderRecords(D) {
+    const held = D.sessions.filter(s => (s.date || "") < D.today || s.page);   // 지난 모임(기록 페이지가 있으면 포함)
+    const asc = held.slice().sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    $("#rec-count").textContent = held.length ? `${held.length}회` : "";
+    if (!held.length) { $("#records").innerHTML = `<div class="card"><div class="empty">아직 지난 모임 기록이 없습니다</div></div>`; return; }
+    const cards = held.map((s, i) => `<div class="${i >= 3 ? "rec-more" : ""}">${recordCard(D, s)}</div>`).join("");
+    $("#records").innerHTML = `<div class="tl" id="tl">${cards}</div>${held.length > 3 ? `<button type="button" class="more-btn" id="rec-all">지난 모임 ${held.length}회 모두 보기</button>` : ""}`;
+    $("#rec-all")?.addEventListener("click", e => { $("#tl").classList.add("all"); e.currentTarget.remove(); });
+  }
+
+  function renderTasks(D) {
+    const list = tasksFor(D);
+    const root = $("#tasks");
+    if (!list.length) { root.innerHTML = ""; root.style.display = "none"; return; }
+    root.innerHTML = `<div class="callout"><div class="ttl">내가 할 일</div>
+      ${list.map(t => `<div class="task"><b class="num">${t.title}</b><p>${t.desc}</p>${t.acct ? `<p class="acct">${t.acct}</p>` : ""}${t.link ? `<a class="tlink" href="${t.link}">${t.linkLabel || "기록 보기"} &rarr;</a>` : ""}${t.action}</div>`).join("")}</div>`;
+    bindCopy(root);
+  }
+
+  function renderFundPanel(D) {
+    const { f } = D, t = f.current, root = $("#fund");
+    if (!t && !f.duesCount && !f.fundExpenses.length) {
+      root.innerHTML = `<div class="panel"><div class="top"><span>회비</span><small>회비 설정 없음${isAdmin() ? ' · <a href="admin.html#dues">관리</a>에서 설정' : ""}</small></div></div>`; return;
     }
-    sessions.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-    comments.forEach(c => { if (!c.deleted) commentCount[c.sessionId] = (commentCount[c.sessionId] || 0) + 1; });
-    sessionsById = Object.fromEntries(sessions.map(s => [s.id, s]));
-    r = computeSettlement({ expenses, payments, sessionsById, members: members() });
-    f = computeFund({ terms, dues, expenses, payments, members: members(), today, splitSurplus: r.surplus });
-    sch = computeSchedule({ meeting: settings?.meeting, rotation: settings?.rotation, sessions, today, months: 12, untilEnd: true });
-    window.__fund = f; window.__r = r; window.__sched = sch;
+    const b = t?.budget, c = b?.current;
+    let line = "", monthRow = "";
+    if (c) {
+      const avail = c.carried + c.alloc;
+      const pct = avail > 0 ? Math.min(100, Math.max(0, c.spent / avail * 100)) : (c.spent > 0 ? 100 : 0);
+      const [, mm] = c.ym.split("-").map(Number);
+      line = `<div class="bar${c.remaining < 0 ? " over" : ""}"><i style="width:${pct.toFixed(1)}%"></i></div>
+        <small class="num">${mm}월 예산 ${fmtWon(avail)}원${c.carried > 0 ? `(이월 ${fmtWon(c.carried)}원 포함)` : ""} 중 ${fmtWon(c.spent)}원 씀</small>`;
+      monthRow = `<div class="pr"><span>${mm}월에 더 쓸 수 있는 돈</span><span class="v num${c.remaining < 0 ? " unpaid" : ""}">${c.remaining >= 0 ? `${fmtWon(c.remaining)}원` : `${fmtWon(-c.remaining)}원 초과`}</span></div>`;
+    } else if (b?.status === "before") line = `<small class="num">${esc(fmtMonth(b.startYm))}부터 매달 ${fmtWon(b.monthly)}원</small>`;
+    else if (t) line = `<small>${esc(termPeriod(t).replace(" ~ ", NB + "~" + NB))}</small>`;
+    const rows = [];
+    if (monthRow) rows.push(monthRow);
+    if (t) rows.push(t.unpaid.length
+      ? `<div class="pr"><span>아직 안 낸 사람</span><span>${t.unpaid.map(u => `<span class="unpaid">${esc(u.name)}</span>`).join(" ")}</span></div>`
+      : `<div class="pr"><span>납부</span><span class="ok">${t.paidCount}/${t.rows.length}명 모두 냄</span></div>`);
+    if (f.reimburseTotal) rows.push(`<div class="pr"><span>회비에서 돌려줄 돈</span><span class="v num">${fmtWon(f.reimburseTotal)}원</span></div>`);
+    rows.push(`<a class="pr more" href="${href.fund()}"><span>달별 내역${NB}· 납부 현황${NB}· 계좌</span><svg class="i"><use href="#i-arrow"/></svg></a>`);
+    root.innerHTML = `<div class="panel"><div class="top"><span>지금 남은 회비</span><b class="num${f.balance < 0 ? " neg" : ""}">${fmtWon(f.balance)}원</b>${line}</div>${rows.join("")}</div>`;
+  }
 
-    // 공지: settings/notice에 내용이 있고 종료일이 지나지 않았으면 상단 배너로. 없으면 아무것도 없음.
-    const nt = settings?.notice;
-    if (!DEMO && nt?.text && (!nt.until || today <= nt.until)) $("#note").innerHTML = `<div class="note" style="white-space:pre-line">${esc(nt.text)}</div>`;
-
-    renderSummary();
-    renderSchedule($("#sched"), sch, { me, adminHint: isAdmin() ? "admin.html" : "", weekHref: s => DEMO ? "demo/" : `weeks/${s.id}/` });
-    renderFund($("#fund"), f, { me, adminHint: isAdmin() ? "admin.html" : "" });
-    buildMonthList();
-
-    const [h, sub] = location.hash.replace("#", "").split("/");
-    showTab(h || "summary", sub);
-    window.addEventListener("hashchange", () => { const [h2, s2] = location.hash.replace("#", "").split("/"); showTab(h2 || "summary", s2); });
+  try {
+    const D = await loadAll();
+    const nt = D.settings?.notice;
+    if (!DEMO && nt?.text && (!nt.until || D.today <= nt.until)) $("#note").innerHTML = `<div class="notice"><b>공지</b>${esc(nt.text)}</div>`;
+    if (DEMO) $("#note").innerHTML = `<div class="notice"><b>화면 예시</b>이름과 금액은 가명입니다. 멤버B로 접속했다고 가정한 화면입니다.</div>`;
+    renderHero(D); renderTasks(D); renderNext(D); renderRecords(D); renderFundPanel(D);
     window.__ready = true;
   } catch (ex) {
-    console.error(ex);
-    const msg = /insufficient permissions/i.test(ex.message || "") ? "권한 오류. 총무가 Firestore 규칙을 게시했는지 확인 필요." : esc(ex.message || ex);
-    $("#note").innerHTML = `<div class="note warn">불러오기 실패: ${msg}</div>`;
-    statsEl.innerHTML = "";
+    $("#note").innerHTML = `<div class="note warn">불러오기 실패: ${loadError(ex)}</div>`;
   } finally {
     clearTimeout(slowTimer);
     document.body.classList.remove("loading");

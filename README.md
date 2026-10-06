@@ -4,7 +4,7 @@ HR 스터디 모임의 주차별 기록, 회비 관리(납부·잔액), 멤버 �
 GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 빌드 도구가 없다.
 
 - 사이트: https://aro-deeply.github.io/aro-study/
-- 화면 예시(가명 데이터): https://aro-deeply.github.io/aro-study/demo/
+- 화면 예시(가명 데이터): https://aro-deeply.github.io/aro-study/?demo=1 (첫 화면), `fund.html?demo=1` (회비), `demo/week.html` (주차 페이지)
 - 총무 관리: https://aro-deeply.github.io/aro-study/admin.html
 
 ## 처음 쓰기
@@ -21,8 +21,10 @@ GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 
 
 ## 화면
 
-- `index.html`: 상단 요약 카드(다음 모임·발제·회비 잔액·이달 가용) + 탭 4개. 요약(다음 모임, 확인할 것, 최근 모임), 월별(달을 골라 모임·회비·지출·정산을 한 화면에), 회비(잔액·월별 가용 금액·납부 표·보전할 돈), 일정·발제(12개월 표·발제 순서). 해시 `#months/YYYY-MM`로 특정 달을 바로 연다.
-- `weeks/<날짜>/`: 이날의 내용, 다음 모임 계획, 비용(이 회차 회비 지출과 현재 잔액, 추가 비용이 있으면 n분의 1 정산서), 의견(답글 1단계), 본문 하이라이트·메모(내 것만/전체, AI용 복사).
+- 2026-10-07 재디자인: 탭 없이 한 페이지로 읽히게 바꿨다. 상단 메뉴는 "모임 · 회비" 두 개.
+- `index.html`(첫 화면): 머리띠의 다음 모임 카드(날짜·요일·시간·장소·발제), 내가 할 일(보낼 돈·미납 회비가 있을 때만, 계좌번호 복사), 앞으로의 발제, 지난 모임(최근 3개 + 모두 보기), 회비 요약(남은 회비, 이번 달 예산, 아직 안 낸 사람).
+- `fund.html`(회비): 남은 회비 = 걷은 회비 + 정산 후 남은 돈 - 쓴 돈, 월별 예산(지난 달과 이번 달, 앞으로는 한 줄), 납부 현황, 회비 계좌, 회비에서 쓴 돈 목록, 회비에서 돌려줄 돈.
+- `weeks/<날짜>/`: 오른쪽(휴대폰은 위) 정보 칸(날짜, 발제, 참석), 이날의 내용과 다음 모임, 관련 자료(올리기는 접혀 있음), 비용(회비에서 쓴 돈, 추가 비용과 사람별 정산), 의견(답글 1단계), 본문 하이라이트·메모(내 것만/전체, 메모 복사).
 - `admin.html`: 총무 권한 이름 + 총무 비밀번호로만 열린다. 관리 데이터 쓰기는 Firestore 규칙에서 총무 계정만 허용한다.
 
 ## 회비와 정산 규칙
@@ -36,10 +38,10 @@ GitHub Pages(정적 HTML) + Firebase(Firestore, Authentication)로 동작하며 
 ## 폴더
 
 ```
-index.html  admin.html  manifest.json  firestore.rules  storage.rules  SPEC.md  CLAUDE.md
-assets/   style.css  app.js  schedule.js  fund.js  settle.js  reader.js  resources.js  firebase-config.js  icons/
+index.html  fund.html  admin.html  manifest.json  firestore.rules  storage.rules  SPEC.md  CLAUDE.md
+assets/   style.css  app.js  site.js  schedule.js  fund.js  settle.js  reader.js  resources.js  firebase-config.js  icons/
 weeks/    YYYY-MM-DD/index.html
-templates/week.html   demo/index.html
+templates/week.html   demo/week.html  demo/index.html(계산 테스트)  demo/sample.js
 scripts/  new_week.py  check_week.py  session.mjs  setup.mjs  lib/firestore.mjs  tests/
 .claude/skills/aro-study-week/SKILL.md
 ```

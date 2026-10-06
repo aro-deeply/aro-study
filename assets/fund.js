@@ -129,7 +129,7 @@ export function computeBudget({ start, months, total, expenses = [], today = tod
 /** 계좌 문자열에서 번호만(숫자·하이픈) 뽑는다. 없으면 전체를 돌려준다. */
 export function accountNumber(s) { const m = String(s || "").match(/[\d-]{8,}/); return m ? m[0] : String(s || ""); }
 /** data-copy 버튼: 누르면 클립보드에 복사. root마다 한 번만 건다. */
-function bindCopy(root) {
+export function bindCopy(root) {
   if (root.dataset.copyBound) return; root.dataset.copyBound = "1";
   root.addEventListener("click", async e => {
     const b = e.target.closest("button[data-copy]"); if (!b) return;

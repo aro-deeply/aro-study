@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#F5E8E4">
+<link rel="manifest" href="/aro-study/manifest.json">
+<link rel="apple-touch-icon" href="/aro-study/assets/icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/aro-study/assets/icons/icon-192.png">
+<title>회비 · HR STUDY</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="회비 · HR STUDY">
+<meta property="og:description" content="HR STUDY 회비 현황: 남은 회비, 달별 사용, 납부 현황.">
+<meta property="og:url" content="https://aro-deeply.github.io/aro-study/fund.html">
+<meta property="og:image" content="https://aro-deeply.github.io/aro-study/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  body.loading .body,body.loading .pagehead{visibility:hidden}
+  #loading{display:none;padding:40px 0 10px;text-align:center;color:var(--muted-soft);font-size:.875rem}
+  body.loading #loading{display:block}
+  .fhead{display:grid;grid-template-columns:1fr auto;align-items:end;gap:20px}
+  @media (max-width:760px){.fhead{grid-template-columns:1fr}}
+  .pr .mo{display:inline-flex;align-items:center;gap:8px}
+  .pr .cols{display:flex;gap:18px;text-align:right}
+  .pr .cols span{min-width:76px}
+  .pr.head .cols span{min-width:76px}
+</style>
+</head><body class="loading">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-left" viewBox="0 0 16 16"><path d="M13 8H3M7 4L3 8l4 4"/></symbol>
+</defs></svg>
+<header class="hero"><div class="w">
+  <div id="topbar"></div>
+  <div class="pagehead fhead" id="head"></div>
+</div></header>
+<div class="w">
+  <div id="loading">불러오는 중</div>
+  <div id="note"></div>
+  <div class="body">
+    <main class="col">
+      <div id="budget" data-m style="--o:1"></div>
+      <div id="spent" data-m style="--o:5"></div>
+    </main>
+    <aside class="col side">
+      <div id="dues" data-m style="--o:2"></div>
+      <div id="acct" data-m style="--o:3"></div>
+      <div id="extra" data-m style="--o:4"></div>
+    </aside>
+  </div>
+  <div class="foot"><span>HR STUDY</span><span>조직과 사람을 읽고, 질문하고, 나누다</span></div>
+</div>
+<script type="module">
+  import { esc, $, fmtWon, fmtDate, memberName } from "./assets/app.js";
+  import { termPeriod, accountNumber, bindCopy } from "./assets/fund.js";
+  import { fmtMonth } from "./assets/schedule.js";
+  import { DEMO, loadAll, href, loadError } from "./assets/site.js";
+  const NB = " ";
+
+  const period = t => esc(termPeriod(t)).replace(" ~ ", NB + "~" + NB);
+  const cat = x => x.category && !String(x.item || "").includes(x.category) ? x.category : "";
+
+  function render(D) {
+    const { f, me } = D, t = f.current;
+    // 머리: 남은 회비 = 걷은 회비 + 정산 후 남은 돈 - 쓴 돈
+    const sub = t ? [t.name && t.name !== "회비" ? esc(t.name) : "", period(t), `1인 ${fmtWon(t.fee)}원`, `${t.rows.length}명`].filter(Boolean).join(NB + "· ") : "회비 설정 없음";
+    $("#head").innerHTML = `<div><div class="k">지금 남은 회비</div><div class="big num${f.balance < 0 ? " neg" : ""}">${fmtWon(f.balance)}원</div><div class="s">${sub}</div></div>
+      <div class="mini"><div><span>걷은 회비</span><b class="num">${fmtWon(f.duesTotal)}원</b></div>${f.surplus ? `<div title="추가 비용을 100원 단위로 올려 나누고 남은 돈. 회비에 넣는다"><span>정산 후 남은 돈</span><b class="num">${fmtWon(f.surplus)}원</b></div>` : ""}<div><span>쓴 돈</span><b class="num">${fmtWon(f.spent)}원</b></div></div>`;
+
+    // 월별 예산: 지난 달과 이번 달만 표로, 앞으로의 달은 한 줄로
+    const b = t?.budget;
+    if (b) {
+      const y0 = b.startYm.slice(0, 4);
+      const mo = ym => esc(fmtMonth(ym, ym.slice(0, 4) === y0 ? "short" : "full"));
+      const shown = b.rows.filter(r => r.isPast || r.isCurrent);
+      const future = b.rows.filter(r => !r.isPast && !r.isCurrent);
+      const rows = shown.map(r => `<div class="pr num${r.isCurrent ? " now" : ""}">
+          <span class="mo">${mo(r.ym)}${r.isCurrent ? ' <span class="tag">이번 달</span>' : ""}</span>
+          <span class="cols"><span>${r.spent ? fmtWon(r.spent) + "원" : '<span class="soft">-</span>'}</span><span class="${r.remaining < 0 ? "unpaid" : "v"}">${r.remaining < 0 ? `${fmtWon(-r.remaining)}원 초과` : `${fmtWon(r.remaining)}원`}</span></span></div>`).join("");
+      const gap = t.expected - t.collected;
+      const futureLine = future.length
+        ? `<div class="pr"><span class="grow" style="color:var(--muted)">${mo(future[0].ym)}${future.length > 1 ? "부터 매달" : "에"} 예산이 더해집니다${b.last !== b.monthly ? ` (${mo(future[future.length - 1].ym)}은 ${fmtWon(b.last)}원)` : ""}.</span></div>` : "";
+      $("#budget").innerHTML = `<section class="sec"><h2>월별 예산</h2><div class="panel">
+        <h3>매달 ${fmtWon(b.monthly)}원</h3>
+        <div class="lead">덜 쓴 돈은 다음 달로 넘어갑니다. 예산은 회비를 모두 걷었을 때 기준입니다.${gap > 0 ? ` 아직 걷지 못한 회비 ${fmtWon(gap)}원이 있습니다.` : ""}</div>
+        ${shown.length ? `<div class="pr head"><span>월</span><span class="cols"><span>쓴 돈</span><span>남은 예산</span></span></div>${rows}` : ""}${futureLine}</div></section>`;
+    } else $("#budget").innerHTML = "";
+
+    // 회비에서 쓴 돈 (최근 순). 합계는 위 '쓴 돈'과 같아서 따로 두지 않는다.
+    const xs = f.fundExpenses.slice().sort((a, b2) => (b2.date || "").localeCompare(a.date || ""));
+    const back = id => (f.reimburse.find(r => r.id === id)?.remaining || 0) > 0 ? "회비에서 돌려받을 예정" : "회비에서 돌려받음";
+    $("#spent").innerHTML = `<section class="sec"><h2>회비에서 쓴 돈 <small>${xs.length}건</small></h2><div class="panel">${xs.length
+      ? xs.map(x => `<div class="pr"><span class="grow">${esc(x.item || "(항목 없음)")}<span class="sub">${esc(fmtDate(x.date, "short"))}${cat(x) ? NB + "· " + esc(cat(x)) : ""}${x.paidBy && x.paidBy !== f.adminId ? `${NB}· ${esc(memberName(x.paidBy))} 먼저 결제${NB}· ${back(x.paidBy)}` : ""}</span></span><span class="v num">${fmtWon(x.amount)}원</span></div>`).join("")
+      : '<div class="pad" style="padding-top:14px"><div class="empty">아직 쓴 돈이 없습니다</div></div>'}</div></section>`;
+
+    // 납부
+    if (t) {
+      const rows = t.rows.map(r => `<div class="pr${r.id === me ? " me" : ""}"><span>${esc(r.name)}${r.id === me ? " (나)" : ""}${r.id === f.adminId ? ' <span class="tag">총무</span>' : ""}</span>
+        <span>${r.status === "paid" ? `<span class="s">${esc(fmtDate(r.date, "short"))} 납부</span>` : r.status === "partial" ? `<span class="unpaid">${fmtWon(r.paid)}원만 납부</span>` : '<span class="unpaid">미납</span>'}</span></div>`).join("");
+      $("#dues").innerHTML = `<div class="panel"><h3>납부<em class="num">${t.paidCount}/${t.rows.length}명</em></h3>${rows}</div>`;
+      $("#acct").innerHTML = t.account ? `<div class="panel"><h3>회비 계좌</h3><div class="pr"><span class="grow">${esc(t.account)}</span></div><div class="pad"><button type="button" class="btn block" data-copy="${esc(accountNumber(t.account))}">계좌번호 복사</button></div></div>` : "";
+    }
+    // 회비에서 돌려줄 돈, 이전 회비
+    const pend = f.reimburse.filter(r => r.remaining > 0);
+    const others = f.terms.filter(x => x !== t);
+    $("#extra").innerHTML = (pend.length ? `<div class="panel"><h3>회비에서 돌려줄 돈</h3><div class="lead">회비로 낼 돈을 먼저 결제한 사람에게 돌려줄 금액입니다.</div>${pend.map(r => `<div class="pr"><span>${esc(r.name)}</span><span class="v num">${fmtWon(r.remaining)}원</span></div>`).join("")}</div>` : "")
+      + (others.length ? `<div class="panel" style="margin-top:14px"><h3>이전 회비</h3>${others.map(x => `<div class="pr"><span class="grow">${esc(x.name || "회비")}<span class="sub">${period(x)}${NB}· 납부 ${x.paidCount}/${x.rows.length}명</span></span><span class="v num">${fmtWon(x.collected)}원</span></div>`).join("")}</div>` : "");
+    bindCopy(document.body);
+  }
+
+  try {
+    const D = await loadAll();
+    if (DEMO) $("#note").innerHTML = `<div class="notice"><b>화면 예시</b>이름과 금액은 가명입니다.</div>`;
+    render(D);
+    window.__ready = true;
+  } catch (ex) {
+    $("#note").innerHTML = `<div class="note warn">불러오기 실패: ${loadError(ex)}</div>`;
+  } finally {
+    document.body.classList.remove("loading");
+  }
+  document.addEventListener("aro:me", () => location.reload());
+</script>
+</body></html>
