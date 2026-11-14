@@ -17,8 +17,10 @@
      "expenses": [{ "sessionId": "2026-09-09", "date": "2026-09-09", "item": "...", "amount": 4000, "category": "기타",
                     "source": "split" | "fund", "paidBy": "admin" | "이름", "splitAmong": "attendees" | ["이름", ...], "note": "" }],
      "dues":     [{ "term": "회비", "amount": 50000, "date": "2026-09-11", "members": ["이름", ...], "note": "" }],   // 회비 납부, term은 회비 설정 이름(같은 이름이 여럿이면 "termStart"로 시작일 지정)
-     "payments": [{ "sessionId": "2026-09-09", "from": ["이름", ...] | "이름", "to": "admin" | "이름", "amount": 15000, "date": "2026-09-11", "note": "" }]   // 추가 비용 정산 송금(from 여러 명이면 각각 한 건)
+     "payments": [{ "sessionId": "2026-09-09", "from": ["이름", ...] | "이름", "to": "admin" | "이름", "amount": 15000, "date": "2026-09-11", "note": "" }],  // 추가 비용 정산 송금(from 여러 명이면 각각 한 건)
+     "resources":[{ "sessionId": "2026-09-09", "title": "자료 이름", "url": "https://...", "note": "", "author": "admin" | "이름" }]  // 주차 페이지 관련 자료 링크(2026-11-14 추가). 같은 세션·주소가 있으면 건너뜀
    }
+   sessions[]에 "place", "time" 을 넣으면 정기 규칙과 다른 장소·시간. "page": true 를 넣으면 weeks/<날짜>/index.html 이 있다는 표시(목록에서 "기록 보기" 링크).
    같은 이름·시작일의 회비 설정, 같은 세션·항목·금액의 지출, 같은 회비·사람의 납부, 같은 세션·보낸 사람·받은 사람·금액의 송금이 이미 있으면 건너뛴다(두 번 실행해도 중복되지 않음).
    송금의 보낸 사람과 받은 사람이 같으면(총무 본인 부담분) 기록하지 않고 건너뛴다.
 */
@@ -76,10 +78,25 @@ for (const s of plan.sessions || []) {
   if (s.title !== undefined) f.title = String(s.title);
   if (s.nextPlan !== undefined) f.nextPlan = String(s.nextPlan);
   if (s.presenter) f.presenter = byName(s.presenter).id;
+  if (s.page === true) f.page = true;
+  if (s.place !== undefined) f.place = String(s.place);
+  if (s.time !== undefined) f.time = String(s.time);
   if (s.attendees === "all") f.attendees = active.map(m => m.id);
   else if (Array.isArray(s.attendees)) f.attendees = idsOf(s.attendees);
   if (!existing) { f.title ??= ""; f.nextPlan ??= ""; f.attendees ??= []; f.memo = ""; f.createdAt = new Date(); }
-  ops.push({ label: `sessions/${s.id} ${existing ? "수정" : "생성"}: ${f.title ?? existing?.title ?? ""}${f.presenter ? ` · 발제 ${nameOf(f.presenter)}` : ""}${f.attendees ? ` · 참석 ${f.attendees.length}명` : ""}`, run: () => patchDoc(token, "sessions", s.id, f) });
+  ops.push({ label: `sessions/${s.id} ${existing ? "수정" : "생성"}: ${f.title ?? existing?.title ?? ""}${f.presenter ? ` · 발제 ${nameOf(f.presenter)}` : ""}${f.attendees ? ` · 참석 ${f.attendees.length}명 (${f.attendees.map(nameOf).join(", ")})` : ""}${f.place ? ` · 장소 ${f.place}` : ""}${f.page ? " · 기록 페이지 있음" : ""}`, run: () => patchDoc(token, "sessions", s.id, f) });
+}
+const existingRes = plan.resources?.length ? await listAll(token, "resources") : [];
+const tokenUid = () => JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8")).user_id || "";   // 규칙(createsOwn)이 uid == 접속 uid 를 요구
+for (const r of plan.resources || []) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(r.sessionId || "")) throw new Error("resources[].sessionId 는 YYYY-MM-DD 형식");
+  const url = String(r.url || "").trim();
+  if (!/^https?:\/\//.test(url)) throw new Error(`resources[].url 은 http(s) 주소: ${JSON.stringify(r)}`);
+  const author = !r.author || r.author === "admin" ? (admin?.id || "") : byName(r.author).id;
+  const f = { sessionId: String(r.sessionId), author, title: String(r.title || ""), url, note: String(r.note || ""), uid: tokenUid(), createdAt: new Date() };
+  const label = `resources: [${f.sessionId}] ${f.title || url} · 올린 사람 ${nameOf(author)}`;
+  if (existingRes.find(x => x.sessionId === f.sessionId && x.url === url)) ops.push({ label: label + "  -> 이미 있음, 건너뜀", skip: true });
+  else ops.push({ label, run: () => addDocTo(token, "resources", f) });
 }
 const existingExp = plan.expenses?.length ? await listAll(token, "expenses") : [];
 let expTotal = 0;
